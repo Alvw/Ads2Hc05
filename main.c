@@ -1,0 +1,21 @@
+#include <msp430.h>
+#include "subroutine.h"
+#include "rf.h"
+
+
+volatile unsigned int i;                    // volatile to prevent optimization
+
+int main(void)
+{
+ __disable_interrupt();
+  sys_init();
+  led(1);
+ __enable_interrupt();
+  while (1)
+  {
+   __bis_SR_register(CPUOFF + GIE); // ”ходим в сп€щий режим 
+
+  }
+} 
+
+//AFE_Read_Data(&spiRxBuf[0], 9);
