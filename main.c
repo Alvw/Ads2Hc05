@@ -7,10 +7,13 @@ volatile unsigned int i;                    // volatile to prevent optimization
 
 int main(void)
 {
- //__disable_interrupt();
+ __disable_interrupt();
   sys_init();
- __enable_interrupt();
   rf_init();
+ __enable_interrupt();
+  rf_prog_and_bind();
+  
+  
   while (1)
   {
    __bis_SR_register(CPUOFF + GIE); // ”ходим в сп€щий режим 

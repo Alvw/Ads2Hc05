@@ -3,7 +3,8 @@
 #include "string.h"
 #include "subroutine.h"
 
-void sendCommand(const char* cmd, unsigned char length);
+
+void sendAtCommand(uchar* cmd, uchar length);
 
 unsigned char rf_tx_in_progress; 
 unsigned char tx_cntr = 0;
@@ -11,15 +12,6 @@ unsigned char rx_cntr = 0;
 unsigned char tx_buf[30];
 unsigned char rx_buf[200];
 unsigned char tx_data_size;
-
-const char AT_Command[] = "AT\r\n";
-const char AT_Role_Command[] = "AT+ROLE=1\r\n";
-const char AT_Name_Command[] = "AT+NAME=BIMETER\r\n";
-const char AT_UART_Command[] = "AT+UART=230400,1,0\r\n";
-const char AT_RMAAD_Command[] = "AT+RMAAD\r\n";
-const char AT_BIND_Command[] = "AT+BIND=14,1,143254\r\n";
-const char AT_CMODE_Command[] = "AT+CMODE=0\r\n";
-const char AT_Get_ADDR_Command[] = "AT+ADDR?\r\n";
 
 void rf_init(){
   //Reset pin p3.7 and Programming mode pin p3.6
@@ -47,30 +39,17 @@ void rf_init(){
   UCA0MCTL = UCBRS2 + UCBRS1;               	 // Modulation UCBRSx = 6
   UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
   IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
-  
-  sendCommand(AT_Command, sizeof(AT_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_Role_Command, sizeof(AT_Role_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_Name_Command, sizeof(AT_Name_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_UART_Command, sizeof(AT_UART_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_RMAAD_Command, sizeof(AT_RMAAD_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_BIND_Command, sizeof(AT_BIND_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_CMODE_Command, sizeof(AT_CMODE_Command));
-  __delay_cycles(1600000);
-  rx_cntr = 0;
-  sendCommand(AT_Get_ADDR_Command, sizeof(AT_Get_ADDR_Command));
-   led(1);
+}
+
+void rf_prog_and_bind(){
+  sendAtCommand("AT+ROLE=1\r\n", sizeof("AT+ROLE=1\r\n"));
+  sendAtCommand("AT+NAME=BIMETER\r\n", sizeof("AT+NAME=BIMETER\r\n"));
+  sendAtCommand("AT+UART=230400,1,0\r\n", sizeof("AT+UART=230400,1,0\r\n"));
+  sendAtCommand("AT+RMAAD\r\n", sizeof("AT+RMAAD\r\n"));
+  sendAtCommand("AT+BIND=14,1,143254\r\n", sizeof("AT+BIND=14,1,143254\r\n"));
+  sendAtCommand("AT+CMODE=0\r\n", sizeof("AT+CMODE=0\r\n"));
+  sendAtCommand("AT+ADDR?\r\n", sizeof("AT+ADDR?\r\n"));
+  led(1);
 }
 
 #pragma vector=USCIAB0RX_VECTOR
@@ -97,10 +76,15 @@ __interrupt void USCI0TX_ISR(void) {
   }
 }
 
-void sendCommand(const char* cmd, unsigned char length){
+void rf_send(uchar* cmd, uchar length){
   memcpy(tx_buf, cmd, length);
   tx_data_size = length - 1;
   startRFSending();
 }
 
+void sendAtCommand(uchar* cmd, uchar length){
+  rx_cntr = 0;
+  rf_send(cmd, length);
+    __delay_cycles(1600000);
+}
 
