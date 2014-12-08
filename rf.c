@@ -1,27 +1,35 @@
 #include <msp430.h>
 #include "rf.h"
 #include "string.h"
+#include "subroutine.h"
 
-void sendAtCommand();
+void sendCommand(const char* cmd, unsigned char length);
 
 unsigned char rf_tx_in_progress; 
 unsigned char tx_cntr = 0;
 unsigned char rx_cntr = 0;
-unsigned char tx_buf[20];
-unsigned char rx_buf[20];
+unsigned char tx_buf[30];
+unsigned char rx_buf[200];
 unsigned char tx_data_size;
 
-const unsigned char AT_Command[] = {'A','T','\r','\n'};
-
+const char AT_Command[] = "AT\r\n";
+const char AT_Role_Command[] = "AT+ROLE=1\r\n";
+const char AT_Name_Command[] = "AT+NAME=BIMETER\r\n";
+const char AT_UART_Command[] = "AT+UART=230400,1,0\r\n";
+const char AT_RMAAD_Command[] = "AT+RMAAD\r\n";
+const char AT_BIND_Command[] = "AT+BIND=14,1,143254\r\n";
+const char AT_CMODE_Command[] = "AT+CMODE=0\r\n";
+const char AT_Get_ADDR_Command[] = "AT+ADDR?\r\n";
 
 void rf_init(){
   //Reset pin p3.7 and Programming mode pin p3.6
   P3DIR |= BIT6 + BIT7;
   P3OUT |= BIT6 + BIT7;
-//  __delay_cycles(16000000);
-//  P3OUT &=~ BIT7;
-//   __delay_cycles(16000000);
-//  P3OUT |= BIT7;
+  
+  P3OUT &= ~BIT7;
+  __delay_cycles(1600000);
+  P3OUT |= BIT7;
+  __delay_cycles(1600000);
   
   //configure UART 230400
   //  P3SEL = 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
@@ -40,9 +48,29 @@ void rf_init(){
   UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
   IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
   
-  
-  //send AT command
-  sendAtCommand();
+  sendCommand(AT_Command, sizeof(AT_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_Role_Command, sizeof(AT_Role_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_Name_Command, sizeof(AT_Name_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_UART_Command, sizeof(AT_UART_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_RMAAD_Command, sizeof(AT_RMAAD_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_BIND_Command, sizeof(AT_BIND_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_CMODE_Command, sizeof(AT_CMODE_Command));
+  __delay_cycles(1600000);
+  rx_cntr = 0;
+  sendCommand(AT_Get_ADDR_Command, sizeof(AT_Get_ADDR_Command));
+   led(1);
 }
 
 #pragma vector=USCIAB0RX_VECTOR
@@ -69,9 +97,9 @@ __interrupt void USCI0TX_ISR(void) {
   }
 }
 
-void sendAtCommand(){
-  memcpy(tx_buf, AT_Command, 4);
-  tx_data_size = 4;
+void sendCommand(const char* cmd, unsigned char length){
+  memcpy(tx_buf, cmd, length);
+  tx_data_size = length - 1;
   startRFSending();
 }
 

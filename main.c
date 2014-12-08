@@ -9,8 +9,6 @@ int main(void)
 {
  //__disable_interrupt();
   sys_init();
-  led(1);
- 
  __enable_interrupt();
   rf_init();
   while (1)
