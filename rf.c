@@ -10,7 +10,7 @@ unsigned char rf_tx_in_progress;
 unsigned char tx_cntr = 0;
 unsigned char rx_cntr = 0;
 unsigned char tx_buf[30];
-unsigned char rx_buf[200];
+unsigned char rx_buf[20];
 unsigned char tx_data_size;
 
 void rf_init(){
@@ -18,27 +18,30 @@ void rf_init(){
   P3DIR |= BIT6 + BIT7;
   P3OUT |= BIT6 + BIT7;
   
+  P3OUT &= ~BIT6;
+  
   P3OUT &= ~BIT7;
   __delay_cycles(1600000);
   P3OUT |= BIT7;
   __delay_cycles(1600000);
   
   //configure UART 230400
-  //  P3SEL = 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
-  //  UCA0CTL1 |= UCSSEL_2;                    // SMCLC
-  //  UCA0BR0 = 69;                            // 16,000 MHz  230400
-  //  UCA0BR1 = 0;                             
-  //  UCA0MCTL = UCBRS2;               	 // Modulation UCBRSx = 4
-  //  UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
-  //  IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
+    P3SEL = 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
+    UCA0CTL1 |= UCSSEL_2;                    // SMCLC
+    UCA0BR0 = 69;                            // 16,000 MHz  230400
+    UCA0BR1 = 0;                             
+    UCA0MCTL = UCBRS2;               	 // Modulation UCBRSx = 4
+    UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
+    IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
+    
   //configure UART 38400
-  P3SEL = 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
-  UCA0CTL1 |= UCSSEL_2;                    // SMCLC
-  UCA0BR0 = 160;                            // 16 MHz  38400
-  UCA0BR1 = 1;                              // 16 MHz  38400
-  UCA0MCTL = UCBRS2 + UCBRS1;               	 // Modulation UCBRSx = 6
-  UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
-  IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
+//  P3SEL = 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
+//  UCA0CTL1 |= UCSSEL_2;                    // SMCLC
+//  UCA0BR0 = 160;                            // 16 MHz  38400
+//  UCA0BR1 = 1;                              // 16 MHz  38400
+//  UCA0MCTL = UCBRS2 + UCBRS1;               	 // Modulation UCBRSx = 6
+//  UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
+//  IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
 }
 
 void rf_prog_and_bind(){
@@ -46,7 +49,7 @@ void rf_prog_and_bind(){
   sendAtCommand("AT+NAME=BIMETER\r\n", sizeof("AT+NAME=BIMETER\r\n"));
   sendAtCommand("AT+UART=230400,1,0\r\n", sizeof("AT+UART=230400,1,0\r\n"));
   sendAtCommand("AT+RMAAD\r\n", sizeof("AT+RMAAD\r\n"));
-  sendAtCommand("AT+BIND=14,1,143254\r\n", sizeof("AT+BIND=14,1,143254\r\n"));
+  sendAtCommand("AT+BIND=14,1,211704\r\n", sizeof("AT+BIND=14,1,211704\r\n"));
   sendAtCommand("AT+CMODE=0\r\n", sizeof("AT+CMODE=0\r\n"));
   sendAtCommand("AT+ADDR?\r\n", sizeof("AT+ADDR?\r\n"));
   led(1);
