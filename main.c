@@ -17,7 +17,6 @@ int main(void)
   rf_init();
  __enable_interrupt();
   //rf_prog_and_bind();
-// rf_send("tralivali", sizeof"tralivali");
 
  while (1)
  {
