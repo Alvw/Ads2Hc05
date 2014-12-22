@@ -36,7 +36,7 @@ void rf_init(){
     IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
     
   //configure UART 38400
-//  P3SEL = 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
+//  P3SEL |= 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
 //  UCA0CTL1 |= UCSSEL_2;                    // SMCLC
 //  UCA0BR0 = 160;                            // 16 MHz  38400
 //  UCA0BR1 = 1;                              // 16 MHz  38400
