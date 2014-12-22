@@ -1,15 +1,14 @@
 #include <msp430.h>
 #include "ads1292.h"
-//#include "define.h"
 
-unsigned char AFE_isRecording;
-unsigned char spiRxBuf[9];
+uchar AFE_isRecording;
+uchar spiRxBuf[9];
 long AFE_Data[5];
-unsigned char AFE_Data_Buf_Ready;
-//unsigned char AFE_SPI_RX_Cntr;
-unsigned char* AFE_CharBuff;
-unsigned char DRDY_cntr;
-unsigned char debug;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
+uchar AFE_Data_Buf_Ready;
+//uchar AFE_SPI_RX_Cntr;
+uchar* AFE_CharBuff;
+uchar DRDY_cntr;
+uchar debug;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 long ch1_value[1]; //helper variable
 /******************************************************************************/
 /*                      ADS1292 initialization and start up sequence          */
@@ -85,9 +84,9 @@ void AFE_StopRecording(){
 /* Принимает:  1 байт данных                                                  */
 /* Возвращает: 1 байт данных                                                  */
 /******************************************************************************/
-unsigned char AFE_SPI_Exchange (unsigned char tx_data)
+uchar AFE_SPI_Exchange (uchar tx_data)
 {
-  unsigned char rx_data;
+  uchar rx_data;
   while (!(IFG2 & UCB0TXIFG)); // Wait for TXBUF ready
   UCB0TXBUF = tx_data;         // Send data
   while (UCB0STAT & UCBUSY);   // Wait for TX to complete  
@@ -97,7 +96,7 @@ unsigned char AFE_SPI_Exchange (unsigned char tx_data)
 
 void spiReadData() {
   AFE_CS_OUT &= ~AFE_CS_PIN;                           
-  unsigned char i = 0;
+  uchar i = 0;
   for (; i < 9; i++) {
     spiRxBuf[i] = AFE_SPI_Exchange(0x00);
   }
@@ -105,14 +104,14 @@ void spiReadData() {
   AFE_CS_OUT |= AFE_CS_PIN;                            
 } 
 
-void AFE_Cmd(unsigned char cmd) {
+void AFE_Cmd(uchar cmd) {
   AFE_CS_OUT &= ~AFE_CS_PIN;                           
   AFE_SPI_Exchange(cmd);
   AFE_CS_DELAY;
   AFE_CS_OUT |= AFE_CS_PIN;                            
 }
 
-void AFE_Write_Reg(unsigned char addr, unsigned char value) {
+void AFE_Write_Reg(uchar addr, uchar value) {
   AFE_CS_OUT &= ~AFE_CS_PIN;                           
   AFE_SPI_Exchange(addr);
   AFE_SPI_Exchange(0x01);                      // Send number of bytes to write
@@ -121,11 +120,11 @@ void AFE_Write_Reg(unsigned char addr, unsigned char value) {
   AFE_CS_OUT |= AFE_CS_PIN;                     
 }
 
-unsigned char AFE_Read_Reg(unsigned char addr) {
+uchar AFE_Read_Reg(uchar addr) {
   AFE_CS_OUT &= ~AFE_CS_PIN;                    // CS enable
   AFE_SPI_Exchange(addr);                       // Send address
   AFE_SPI_Exchange(0x01);                       // Send number bytes to read
-  unsigned char x = AFE_SPI_Exchange(0x00);
+  uchar x = AFE_SPI_Exchange(0x00);
   AFE_CS_DELAY;
   AFE_CS_OUT |= AFE_CS_PIN;                     // CS disable
   return x;
@@ -133,7 +132,7 @@ unsigned char AFE_Read_Reg(unsigned char addr) {
 
 void onAFE_DRDY(){
   spiReadData();
-  AFE_CharBuff = (unsigned char *) ch1_value; 
+  AFE_CharBuff = (uchar *) ch1_value; 
   AFE_CharBuff[3] = spiRxBuf[3];
   AFE_CharBuff[2] = spiRxBuf[4];
   AFE_CharBuff[1] = spiRxBuf[5];
@@ -147,7 +146,7 @@ void onAFE_DRDY(){
       AFE_Data[i] = 0;
     }
   }
-  unsigned char sub_cntr = DRDY_cntr / 10;
+  uchar sub_cntr = DRDY_cntr / 10;
   AFE_Data[sub_cntr] += ch1_value[0];
   DRDY_cntr++;
   if(DRDY_cntr == 50){

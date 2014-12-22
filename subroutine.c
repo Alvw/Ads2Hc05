@@ -28,7 +28,7 @@ void sys_init(){
   P1OUT &=~BIT7;
 }
 
-void led(unsigned char state){
+void led(uchar state){
   if(state){
     P1OUT |= BIT7;
   }else{

@@ -1,3 +1,4 @@
+#include "define.h"
 //P4.4 - CS, P1.2 - DRDY, P4.5 - reset, P4.6 - start, P4.7 ClkSel
 // CS
 #define AFE_CS_DIR P4DIR
@@ -26,15 +27,15 @@
 #define TI_SPI_USCIB0_UCLK   BIT3
 
 void AFE_Init();
-void AFE_Cmd(unsigned char cmd) ;
-void AFE_Write_Reg(unsigned char addr, unsigned char value);
-unsigned char AFE_Read_Reg(unsigned char addr);
+void AFE_Cmd(uchar cmd) ;
+void AFE_Write_Reg(uchar addr, uchar value);
+uchar AFE_Read_Reg(uchar addr);
 void onAFE_DRDY();//This function should be called in main cycle after DRDY
 void AFE_StartRecording();
 void AFE_StopRecording();
 extern long AFE_Data[5];
-extern unsigned char AFE_Data_Buf_Ready;
-extern unsigned char AFE_isRecording;
+extern uchar AFE_Data_Buf_Ready;
+extern uchar AFE_isRecording;
 
 #define AFE_CS_DELAY    __delay_cycles(160);//deleay before CS high
 ////-------------------------------------------------------

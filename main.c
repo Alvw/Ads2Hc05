@@ -4,9 +4,8 @@
 #include "ads1292.h"
 #include "ADC10.h"
 
-
 void assemblePacketAndSend();
-unsigned char DRDYFG = 0;
+uchar DRDYFG = 0;
 
 int main(void)
 {

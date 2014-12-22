@@ -7,12 +7,15 @@
 void sendAtCommand(uchar* cmd);
 uchar getStrSize(uchar* str);
 
-unsigned char rf_tx_in_progress; 
-unsigned char tx_cntr = 0;
-unsigned char rx_cntr = 0;
-unsigned char tx_buf[30];
-unsigned char rx_buf[20];
-unsigned char tx_data_size;
+//extern
+uchar rf_tx_in_progress; 
+uchar rf_data_received;
+uchar rf_rx_buf[30];
+
+uchar* rf_tx_buf;
+uchar rf_tx_cntr = 0;
+uchar rf_rx_cntr = 0;
+uchar rf_tx_data_size;
 
 void rf_init(){
   //Reset pin p3.7 and Programming mode pin p3.6
@@ -56,36 +59,61 @@ void rf_prog_and_bind(){
 
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void) {
-  rx_buf[rx_cntr++] = UCA0RXBUF;
+  rf_rx_buf[rf_rx_cntr++] = UCA0RXBUF;
+
+  
 }
+
+//if(UART_RX_DR){
+//    rx_lost_interrupts++;
+//    return;
+//  }
+//  UART_RX_Buf[rx_cntr] = UCA0RXBUF;
+//  if((UART_RX_Buf[0]!=0x80) && (UART_RX_Buf[0]!=0x00)){
+//    rx_lost_frames++;
+//    rx_cntr = 0;
+//    return;
+//  }
+//  if(rx_cntr == 1){
+//    UART_RX_length = UART_RX_Buf[rx_cntr] + 4;
+//  }
+//  rx_cntr++;
+//  if(rx_cntr > (UART_RX_length - 1)){
+//    UART_RX_DR = 1;
+//    rx_cntr = 0;
+//    __bic_SR_register_on_exit(CPUOFF + GIE); // Не возвращаемся в сон при выходе
+//  }
+//
+
 
 void startRFSending() {
   rf_tx_in_progress = 1;
-  tx_cntr = 0;
+  rf_tx_cntr = 0;
   while (!(IFG2 & UCA0TXIFG));
   IFG2 &= ~UCA0TXIFG;                     //tx flag reset!!!!!!!!!
   IE2 |= UCA0TXIE;                        // Enable USCI_A0 TX interrupt
-  UCA0TXBUF = tx_buf[tx_cntr++];	
+  UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];	
 } 
 
 
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0TX_ISR(void) {
-  UCA0TXBUF = tx_buf[tx_cntr++];           // TX next character
-  if (tx_cntr > (tx_data_size - 1)) {                 // TX over?
+  UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];           // TX next character
+  if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
     IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
     rf_tx_in_progress = 0;
   }
 }
 
 void rf_send(uchar* cmd, uchar length){
-  memcpy(tx_buf, cmd, length);
-  tx_data_size = length;
+  //memcpy(rf_tx_buf, cmd, length);
+  rf_tx_buf = cmd;
+  rf_tx_data_size = length;
   startRFSending();
 }
 
 void sendAtCommand(uchar* cmd){
-  rx_cntr = 0;
+  rf_rx_cntr = 0;
   rf_send(cmd, getStrSize(cmd));
     __delay_cycles(1600000);
 }

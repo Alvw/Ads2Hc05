@@ -1,10 +1,10 @@
 #include <msp430.h>
 #include "ADC10.h"
 
-unsigned int ADC10_DMA_Data[4];
-unsigned int ADC10_Data[4];
-unsigned char ADC10_cntr;
-//unsigned char* ADC10_CharBuff;
+uint ADC10_DMA_Data[4];
+uint ADC10_Data[4];
+uchar ADC10_cntr;
+//uchar* ADC10_CharBuff;
 
 void ADC10_Init(){
   
