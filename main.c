@@ -19,10 +19,14 @@ int main(void)
 
  while (1)
  {
+   if(rf_rx_data_ready_fg){
+     sendAtCommand("OK!");
+     rf_rx_data_ready_fg = 0;
+   }
    if (DRDYFG) {       // if DRDY fired
-     DRDYFG = 0;      // Clear DRDY flag
      ADC10_Measure();              //start ADC10 conversion
      onAFE_DRDY();
+     DRDYFG = 0;      // Clear DRDY flag
    }
    if (AFE_Data_Buf_Ready) {       // AFE buffer ready to send
      assemblePacketAndSend();

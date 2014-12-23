@@ -64,7 +64,7 @@ void AFE_Init(){
   AFE_Write_Reg(0x49, 0x02); //Set mandatory bit. RLD REF INT doesn't work without it.
   AFE_Write_Reg(0x4A, 0x03);				//Set RLDREF_INT
   AFE_Cmd(0x10);                         //start continious
-  AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
+ // AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
   debug = AFE_Read_Reg(0x24);
   
   AFE_isRecording = 0;

@@ -3,14 +3,14 @@
 #include "string.h"
 #include "subroutine.h"
 
-
-void sendAtCommand(uchar* cmd);
 uchar getStrSize(uchar* str);
 
 //extern
 uchar rf_tx_in_progress; 
-uchar rf_data_received;
-uchar rf_rx_buf[30];
+uchar rf_rx_data_ready_fg;
+const uchar rf_rx_buf_size = 30;
+uchar rf_rx_buf[30];// заменить на константу.
+uchar rf_rx_data_size;
 
 uchar* rf_tx_buf;
 uchar rf_tx_cntr = 0;
@@ -60,31 +60,32 @@ void rf_prog_and_bind(){
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void) {
   rf_rx_buf[rf_rx_cntr++] = UCA0RXBUF;
-
-  
+  switch(rf_rx_cntr){
+    case 1:
+      if(rf_rx_buf[0] != 0x55){
+        rf_rx_cntr = 0;
+      }
+      break;
+    case 2:
+      if(rf_rx_buf[1] != 0x55){
+        rf_rx_cntr = 0;
+      }
+      break;
+    case 3:
+      rf_rx_data_size = rf_rx_buf[2];
+      if(rf_rx_data_size > rf_rx_buf_size){
+        rf_rx_cntr = 0;
+      }
+      break;
+    default:
+      if(rf_rx_cntr == rf_rx_data_size){
+        rf_rx_cntr = 0;
+        rf_rx_data_ready_fg = 1;
+        __bic_SR_register_on_exit(CPUOFF);
+      }
+      break;
+  }
 }
-
-//if(UART_RX_DR){
-//    rx_lost_interrupts++;
-//    return;
-//  }
-//  UART_RX_Buf[rx_cntr] = UCA0RXBUF;
-//  if((UART_RX_Buf[0]!=0x80) && (UART_RX_Buf[0]!=0x00)){
-//    rx_lost_frames++;
-//    rx_cntr = 0;
-//    return;
-//  }
-//  if(rx_cntr == 1){
-//    UART_RX_length = UART_RX_Buf[rx_cntr] + 4;
-//  }
-//  rx_cntr++;
-//  if(rx_cntr > (UART_RX_length - 1)){
-//    UART_RX_DR = 1;
-//    rx_cntr = 0;
-//    __bic_SR_register_on_exit(CPUOFF + GIE); // Не возвращаемся в сон при выходе
-//  }
-//
-
 
 void startRFSending() {
   rf_tx_in_progress = 1;
