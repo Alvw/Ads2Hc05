@@ -4,11 +4,10 @@
 uint ADC10_DMA_Data[4];
 uint ADC10_Data[4];
 uchar ADC10_cntr;
-//uchar* ADC10_CharBuff;
 
 void ADC10_Init(){
   
-  P2SEL = BIT0 + BIT1 + BIT2 + BIT3; // ADC
+  P2SEL |= BIT0 + BIT1 + BIT2 + BIT3; // ADC
   ADC10CTL0 = SREF_1;      // VREF = VREF+ - VSS
   ADC10CTL0 |= ADC10SHT_3; // S&H time = 64 CLKs
   ADC10CTL0 |= ADC10SR;    // 50 ksps max

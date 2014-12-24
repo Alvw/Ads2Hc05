@@ -27,13 +27,13 @@ void AFE_Init(){
   AFE_START_OUT &= ~AFE_START_PIN; //start pin low 
   //Clock select pin
   AFE_CLOCK_SELECT_DIR |= AFE_CLOCK_SELECT_PIN;
-  AFE_CLOCK_SELECT_OUT &= ~AFE_CLOCK_SELECT_PIN;
+  AFE_CLOCK_SELECT_OUT &= ~AFE_CLOCK_SELECT_PIN; //0 - external clock
    
   //Spi setup
   UCB0CTL1 |= UCSWRST;                      // **Disable USCI state machine**
   UCB0CTL0 |= UCMST + UCMSB + UCSYNC;       // 3-pin, 8-bit SPI master
   UCB0CTL1 |= UCSSEL_1;                     // ACLK !!!
-  UCB0BR0 = 0x10;                           // UCLK/16
+  UCB0BR0 = 0x04;                           // UCLK/4 = 4 mHz
   UCB0BR1 = 0;
   //----------------------------------
   //P3REN = 0x00; // Pull-UP/DOWN Resistors Disabled

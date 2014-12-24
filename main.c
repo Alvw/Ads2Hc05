@@ -11,10 +11,12 @@ int main(void)
 {
  //__disable_interrupt();
   sys_init();
- // ADC10_Init();
- // AFE_Init();
- // rf_init();
- __enable_interrupt();
+  ADC10_Init();
+  AFE_Init();
+  rf_init();
+  // __disable_interrupt();
+  
+ // __enable_interrupt();
   //rf_prog_and_bind();
 
  while (1)
