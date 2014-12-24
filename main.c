@@ -9,11 +9,11 @@ uchar DRDYFG = 0;
 
 int main(void)
 {
- __disable_interrupt();
+ //__disable_interrupt();
   sys_init();
-  ADC10_Init();
-  AFE_Init();
-  rf_init();
+ // ADC10_Init();
+ // AFE_Init();
+ // rf_init();
  __enable_interrupt();
   //rf_prog_and_bind();
 

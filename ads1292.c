@@ -27,12 +27,12 @@ void AFE_Init(){
   AFE_START_OUT &= ~AFE_START_PIN; //start pin low 
   //Clock select pin
   AFE_CLOCK_SELECT_DIR |= AFE_CLOCK_SELECT_PIN;
-  AFE_CLOCK_SELECT_OUT |= AFE_CLOCK_SELECT_PIN;
+  AFE_CLOCK_SELECT_OUT &= ~AFE_CLOCK_SELECT_PIN;
    
   //Spi setup
   UCB0CTL1 |= UCSWRST;                      // **Disable USCI state machine**
   UCB0CTL0 |= UCMST + UCMSB + UCSYNC;       // 3-pin, 8-bit SPI master
-  UCB0CTL1 |= UCSSEL_2;                     // SMCLK
+  UCB0CTL1 |= UCSSEL_1;                     // ACLK !!!
   UCB0BR0 = 0x10;                           // UCLK/16
   UCB0BR1 = 0;
   //----------------------------------
@@ -61,10 +61,11 @@ void AFE_Init(){
   AFE_Write_Reg(0x41, 0x02);                //Set sampling ratio to 500 SPS
   AFE_Write_Reg(0x42, 0xE0);      	//Set internal reference PDB_REFBUF = 1; int test enable
   AFE_Write_Reg(0x46, 0x20);         	    //Turn on Drl.
+  AFE_Write_Reg(0x48, 0x40);                //clock divider Fclc/16 2048mHz external clock
   AFE_Write_Reg(0x49, 0x02); //Set mandatory bit. RLD REF INT doesn't work without it.
   AFE_Write_Reg(0x4A, 0x03);				//Set RLDREF_INT
   AFE_Cmd(0x10);                         //start continious
- // AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
+  //AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
   debug = AFE_Read_Reg(0x24);
   
   AFE_isRecording = 0;
