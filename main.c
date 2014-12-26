@@ -5,6 +5,8 @@
 #include "ADC10.h"
 
 void assemblePacketAndSend();
+void onRF_MessageReceived();
+void onRF_MultiByteMessage();
 uchar DRDYFG = 0;
 
 int main(void)
@@ -22,7 +24,7 @@ int main(void)
  while (1)
  {
    if(rf_rx_data_ready_fg){
-     sendAtCommand("OK!");
+     onRF_MessageReceived();
      rf_rx_data_ready_fg = 0;
    }
    if (DRDYFG) {       // if DRDY fired
@@ -37,6 +39,51 @@ int main(void)
    __bis_SR_register(CPUOFF + GIE); // ”ходим в сп€щий режим 
  }
 } 
+/*-----------------ќбработка полученного с компьютера сообщени€--------------*/
+void onRF_MessageReceived(){
+  if(rf_rx_buf[0]>rf_rx_buf_size){
+    switch(rf_rx_buf[0]){
+    case 255: //stop recording command
+      AFE_StopRecording();
+      break;
+    case 254: //start recording command
+      AFE_StartRecording();
+      break;
+    case 253: //hello command
+      //todo send hello command
+      break;
+    case 252: //верси€ прошивки
+      //todo send firmware vercion
+      break;
+    default:
+      //провер€ем два последних байта == маркер конца пакета
+      if(((rf_rx_buf[rf_rx_buf[0]-1] == 0x55) && (rf_rx_buf[rf_rx_buf[0]-2] == 0x55))){
+        onRF_MultiByteMessage();
+      }else{
+        //todo send error message
+      }
+      break;
+    }
+  }
+}
+
+void onRF_MultiByteMessage(){
+  uchar msgOffset = 1;
+  while (msgOffset < (rf_rx_buf[0]-2)){
+    if(rf_rx_buf[msgOffset] == 0x01){//«апись регистров ads1292
+     // AFE_Write_Reg(uchar addr, uchar value);
+      msgOffset+=rf_rx_buf[msgOffset+2]+3;
+    }
+    if(rf_rx_buf[msgOffset] == 0x02){//делители частоты дл€ ads1292 и акселерометра
+      //todo запись делителей, проверка значений.
+      msgOffset+=4;
+    }
+    if(rf_rx_buf[msgOffset] == 0x03){//–ежим работы акселерометра
+      //todo 
+      msgOffset+=2;
+    }
+  }
+}
 
 /* ------------------------ ѕрерывание от P1 ----------------------- */
 

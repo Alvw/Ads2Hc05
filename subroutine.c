@@ -10,7 +10,8 @@ void sys_init(){
   BCSCTL1 = CALBC1_16MHZ;                    
   DCOCTL = CALDCO_16MHZ;
   BCSCTL2 |= DIVS_3;                        // SMCLK / 8;
-   
+  
+  //SMCLC output pin
   P1DIR |= BIT4; //P1.4 = output direction
   P1SEL |= BIT4; //P1.4 = SMCLK output function
   

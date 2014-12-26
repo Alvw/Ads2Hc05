@@ -28,8 +28,8 @@
 
 void AFE_Init();
 void AFE_Cmd(uchar cmd) ;
-void AFE_Write_Reg(uchar addr, uchar value);
-uchar AFE_Read_Reg(uchar addr);
+void AFE_Write_Reg(uchar addr, uchar numOfBytes, const uchar* values);
+void AFE_Read_Reg(uchar addr, uchar numOfBytes, uchar* regBuf);
 void onAFE_DRDY();//This function should be called in main cycle after DRDY
 void AFE_StartRecording();
 void AFE_StopRecording();

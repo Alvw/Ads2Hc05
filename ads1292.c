@@ -10,6 +10,7 @@ uchar* AFE_CharBuff;
 uchar DRDY_cntr;
 uchar debug;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 long ch1_value[1]; //helper variable
+const uchar regValues[] = {0x02,0xE0,0x10,0x01,0x81,0x20,0x0F,0x40,0x02,0x03};
 /******************************************************************************/
 /*                      ADS1292 initialization and start up sequence          */
 /******************************************************************************/
@@ -56,17 +57,18 @@ void AFE_Init(){
   AFE_RESET_OUT |= AFE_RESET_PIN;
   __delay_cycles(800);                         //delay before using ADS1292
   AFE_Cmd(0x11);                                 //stop continious
-  AFE_Write_Reg(0x44, 0x01);                 //Set Channel 1 to test
-  AFE_Write_Reg(0x45, 0x81);                 //Set Channel 2 to Input Short and disable
-  AFE_Write_Reg(0x41, 0x02);                //Set sampling ratio to 500 SPS
-  AFE_Write_Reg(0x42, 0xE0);      	//Set internal reference PDB_REFBUF = 1; int test enable
-  AFE_Write_Reg(0x46, 0x20);         	    //Turn on Drl.
-  AFE_Write_Reg(0x48, 0x40);                //clock divider Fclc/16 2048mHz external clock
-  AFE_Write_Reg(0x49, 0x02); //Set mandatory bit. RLD REF INT doesn't work without it.
-  AFE_Write_Reg(0x4A, 0x03);				//Set RLDREF_INT
+//  AFE_Write_Reg(0x44, 0x01);                 //Set Channel 1 to test
+//  AFE_Write_Reg(0x45, 0x81);                 //Set Channel 2 to Input Short and disable
+//  AFE_Write_Reg(0x41, 0x02);                //Set sampling ratio to 500 SPS
+//  AFE_Write_Reg(0x42, 0xE0);      	//Set internal reference PDB_REFBUF = 1; int test enable
+//  AFE_Write_Reg(0x46, 0x20);         	    //Turn on Drl.
+//  AFE_Write_Reg(0x48, 0x40);                //clock divider Fclc/16 2048mHz external clock
+//  AFE_Write_Reg(0x49, 0x02); //Set mandatory bit. RLD REF INT doesn't work without it.
+//  AFE_Write_Reg(0x4A, 0x03);				//Set RLDREF_INT
+  AFE_Write_Reg(0x01,0x0A,regValues);
   AFE_Cmd(0x10);                         //start continious
-  //AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
-  debug = AFE_Read_Reg(0x24);
+  AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
+
   
   AFE_isRecording = 0;
 }
@@ -112,23 +114,26 @@ void AFE_Cmd(uchar cmd) {
   AFE_CS_OUT |= AFE_CS_PIN;                            
 }
 
-void AFE_Write_Reg(uchar addr, uchar value) {
-  AFE_CS_OUT &= ~AFE_CS_PIN;                           
-  AFE_SPI_Exchange(addr);
-  AFE_SPI_Exchange(0x01);                      // Send number of bytes to write
-  AFE_SPI_Exchange(value);                     // Send data
+void AFE_Write_Reg(uchar addr, uchar numOfBytes, const uchar* values) {
+  AFE_CS_OUT &= ~AFE_CS_PIN; 
+  AFE_SPI_Exchange(addr | 0x40);
+  AFE_SPI_Exchange(numOfBytes);                      // Send number of bytes to write
+  for(uchar i = 0; i< numOfBytes; i++){
+    AFE_SPI_Exchange(values[i]);                     // Send data
+  }               
   AFE_CS_DELAY;
   AFE_CS_OUT |= AFE_CS_PIN;                     
 }
 
-uchar AFE_Read_Reg(uchar addr) {
+void AFE_Read_Reg(uchar addr, uchar numOfBytes, uchar* regBuf) {
   AFE_CS_OUT &= ~AFE_CS_PIN;                    // CS enable
-  AFE_SPI_Exchange(addr);                       // Send address
-  AFE_SPI_Exchange(0x01);                       // Send number bytes to read
-  uchar x = AFE_SPI_Exchange(0x00);
+  AFE_SPI_Exchange(addr | 0x20);                       // Send address
+  AFE_SPI_Exchange(numOfBytes);                       // Send number bytes to read
+  for(uchar i = 0; i< numOfBytes; i++){
+    regBuf[i] = AFE_SPI_Exchange(0x00);              
+  }   
   AFE_CS_DELAY;
   AFE_CS_OUT |= AFE_CS_PIN;                     // CS disable
-  return x;
 } 
 
 void onAFE_DRDY(){

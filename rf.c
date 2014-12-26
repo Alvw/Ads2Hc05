@@ -8,8 +8,8 @@ uchar getStrSize(uchar* str);
 //extern
 uchar rf_tx_in_progress; 
 uchar rf_rx_data_ready_fg;
-const uchar rf_rx_buf_size = 30;
-uchar rf_rx_buf[30];// заменить на константу.
+uchar rf_rx_buf_size = 50;
+uchar rf_rx_buf[50];// заменить на константу.
 uchar rf_rx_data_size;
 
 uchar* rf_tx_buf;
@@ -62,19 +62,12 @@ __interrupt void USCI0RX_ISR(void) {
   rf_rx_buf[rf_rx_cntr++] = UCA0RXBUF;
   switch(rf_rx_cntr){
     case 1:
-      if(rf_rx_buf[0] != 0x55){
+      if(rf_rx_buf[0] > rf_rx_buf_size){//one byte message
         rf_rx_cntr = 0;
-      }
-      break;
-    case 2:
-      if(rf_rx_buf[1] != 0x55){
-        rf_rx_cntr = 0;
-      }
-      break;
-    case 3:
-      rf_rx_data_size = rf_rx_buf[2];
-      if(rf_rx_data_size > rf_rx_buf_size){
-        rf_rx_cntr = 0;
+        rf_rx_data_ready_fg = 1;
+        __bic_SR_register_on_exit(CPUOFF);
+      }else{
+        rf_rx_data_size = rf_rx_buf[0];
       }
       break;
     default:

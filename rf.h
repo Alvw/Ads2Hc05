@@ -1,7 +1,8 @@
 #include "define.h"
 extern uchar rf_tx_in_progress; 
 extern uchar rf_data_received;
-extern uchar rf_rx_buf[30];
+extern uchar rf_rx_buf_size;
+extern uchar rf_rx_buf[50];//заменить на костанту
 extern uchar rf_rx_data_ready_fg;
 
 void rf_init();
