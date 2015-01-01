@@ -3,11 +3,13 @@
 #include "rf.h"
 #include "ads1292.h"
 #include "ADC10.h"
+#include "PacketUtil.h"
 
 void assemblePacketAndSend();
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
-uchar DRDYFG = 0;
+uchar pctDataReady = 0;
+uchar debugLostFrames = 0;//!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 
 int main(void)
 {
@@ -27,14 +29,14 @@ int main(void)
      onRF_MessageReceived();
      rf_rx_data_ready_fg = 0;
    }
-   if (DRDYFG) {       // if DRDY fired
-     ADC10_Measure();              //start ADC10 conversion
-     onAFE_DRDY();
-     DRDYFG = 0;      // Clear DRDY flag
-   }
-   if (AFE_Data_Buf_Ready) {       // AFE buffer ready to send
-     assemblePacketAndSend();
-     AFE_Data_Buf_Ready = 0;
+   if (pctDataReady) {       
+     uchar packetSize = assemblePacket();
+     if(!rf_tx_in_progress){
+        rf_send((uchar*)&packet_buf[0], packetSize);
+     }else{
+        debugLostFrames++;
+     }
+     pctDataReady = 0;      
    }
    __bis_SR_register(CPUOFF + GIE); // Уходим в спящий режим 
  }
@@ -90,9 +92,17 @@ void onRF_MultiByteMessage(){
 #pragma vector = PORT1_VECTOR
 __interrupt void Port1_ISR(void)
 {
-  P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
-    DRDYFG = 1;
-  __bic_SR_register_on_exit(CPUOFF); // Не возвращаемся в сон при выходе
+  if (P1IFG & AFE_DRDY_PIN) { 
+    P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
+    long new_data[6];// = {10,10,10,10,10,10};//2 ch ADS1292 + 4ch ADC10
+AFE_Read_Data(&new_data[0]);
+ADC10_Read_Data(&new_data[2]);
+    ADC10_Measure();
+    if(pctAddNewData(new_data)){
+      pctDataReady = 1;
+      __bic_SR_register_on_exit(CPUOFF); // Не возвращаемся в сон при выходе
+    }
+  }
 }
 /* -------------------------------------------------------------------------- */
 

@@ -16,6 +16,7 @@ uchar* rf_tx_buf;
 uchar rf_tx_cntr = 0;
 uchar rf_rx_cntr = 0;
 uchar rf_tx_data_size;
+uchar tmp; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 
 void rf_init(){
   //Reset pin p3.7 and Programming mode pin p3.6
@@ -28,7 +29,8 @@ void rf_init(){
   
   //configure UART 230400
     P3SEL |= 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
-    UCA0CTL1 |= UCSSEL_2;                    // SMCLC
+    //UCA0CTL1 |= UCSSEL_2;                    // SMCLC
+    UCA0CTL1 |= UCSSEL_1;                    // ACLC
     UCA0BR0 = 69;                            // 16,000 MHz  230400
     UCA0BR1 = 0;                             
     UCA0MCTL = UCBRS2;               	 // Modulation UCBRSx = 4
@@ -92,7 +94,9 @@ void startRFSending() {
 
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0TX_ISR(void) {
-  UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];           // TX next character
+  tmp = rf_tx_buf[rf_tx_cntr++];
+  UCA0TXBUF = tmp;
+  //UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];           // TX next character
   if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
     IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
     rf_tx_in_progress = 0;

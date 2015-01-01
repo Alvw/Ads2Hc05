@@ -30,12 +30,9 @@ void AFE_Init();
 void AFE_Cmd(uchar cmd) ;
 void AFE_Write_Reg(uchar addr, uchar numOfBytes, const uchar* values);
 void AFE_Read_Reg(uchar addr, uchar numOfBytes, uchar* regBuf);
-void onAFE_DRDY();//This function should be called in main cycle after DRDY
+void AFE_Read_Data(long* result);
 void AFE_StartRecording();
 void AFE_StopRecording();
-extern long AFE_Data[5];
-extern uchar AFE_Data_Buf_Ready;
-extern uchar AFE_isRecording;
 
 #define AFE_CS_DELAY    __delay_cycles(160);//deleay before CS high
 ////-------------------------------------------------------

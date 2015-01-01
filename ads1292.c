@@ -1,16 +1,9 @@
 #include <msp430.h>
 #include "ads1292.h"
 
-uchar AFE_isRecording;
 uchar spiRxBuf[9];
-long AFE_Data[5];
-uchar AFE_Data_Buf_Ready;
-//uchar AFE_SPI_RX_Cntr;
 uchar* AFE_CharBuff;
-uchar DRDY_cntr;
-uchar debug;//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
-long ch1_value[1]; //helper variable
-const uchar regValues[] = {0x02,0xE0,0x10,0x01,0x81,0x20,0x0F,0x40,0x02,0x03};
+const uchar regValues[] = {0x02,0xE0,0x10,0x01,0x81,0x02,0x0F,0x40,0x02,0x03};
 /******************************************************************************/
 /*                      ADS1292 initialization and start up sequence          */
 /******************************************************************************/
@@ -68,18 +61,13 @@ void AFE_Init(){
   AFE_Write_Reg(0x01,0x0A,regValues);
   AFE_Cmd(0x10);                         //start continious
   AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
-
-  
-  AFE_isRecording = 0;
 }
 
 void AFE_StartRecording(){
   AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
-  AFE_isRecording = 1;
 }
 void AFE_StopRecording(){
   AFE_START_OUT &= ~AFE_START_PIN;                           //start pin lo
-  AFE_isRecording = 0;
 }
 
 /******************************************************************************/
@@ -136,30 +124,34 @@ void AFE_Read_Reg(uchar addr, uchar numOfBytes, uchar* regBuf) {
   AFE_CS_OUT |= AFE_CS_PIN;                     // CS disable
 } 
 
-void onAFE_DRDY(){
+void AFE_Read_Data(long* result){
   spiReadData();
-  AFE_CharBuff = (uchar *) ch1_value; 
+  AFE_CharBuff = (uchar *) &result[0]; 
   AFE_CharBuff[3] = spiRxBuf[3];
   AFE_CharBuff[2] = spiRxBuf[4];
   AFE_CharBuff[1] = spiRxBuf[5];
-  ch1_value[0] = ch1_value[0] >> 8;
-//  AFE_CharBuff[3] = 0xFF;
-//  AFE_CharBuff[2] = 0x00;
-//  AFE_CharBuff[1] = 0x55;
+  result[0] = result[0] >> 8;
   
-  if(DRDY_cntr == 0){
-    for(int i =0; i<5; i++){
-      AFE_Data[i] = 0;
-    }
-  }
-  uchar sub_cntr = DRDY_cntr / 10;
-  AFE_Data[sub_cntr] += ch1_value[0];
-  DRDY_cntr++;
-  if(DRDY_cntr == 50){
-    for(int i =0; i<5; i++){
-      AFE_Data[i] /= 10;
-    }
-    DRDY_cntr = 0;
-    AFE_Data_Buf_Ready = 1;
-  }
+  AFE_CharBuff = (uchar *) &result[1]; 
+  AFE_CharBuff[3] = spiRxBuf[6];
+  AFE_CharBuff[2] = spiRxBuf[7];
+  AFE_CharBuff[1] = spiRxBuf[8];
+  result[0] = result[0] >> 8;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

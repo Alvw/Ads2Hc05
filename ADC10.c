@@ -2,8 +2,6 @@
 #include "ADC10.h"
 
 uint ADC10_DMA_Data[4];
-uint ADC10_Data[4];
-uchar ADC10_cntr;
 
 void ADC10_Init(){
   
@@ -20,7 +18,6 @@ void ADC10_Init(){
   ADC10CTL1 = INCH_3 + CONSEQ_1;        // A3/A2/A1/A0, single sequence
   ADC10DTC1 = 0x04;                         // 4 conversions
   ADC10AE0 |= 0x0F;                         // P2.3, 2.2, 2.1, 2.0 ADC10 option select
-  ADC10_cntr = 0;
 }
 
 /* --------------------- Измерение АЦП по 4-м каналам -------------------- */
@@ -33,3 +30,9 @@ void ADC10_Measure()
   ADC10CTL0 |= ENC + ADC10SC;             // Sampling and conversion start 
 }
 /* -------------------------------------------------------------------------- */
+
+void ADC10_Read_Data(long* result){
+  for(int i = 0; i < 4; i++){
+    result[i] = ADC10_DMA_Data[i];
+  }
+}
