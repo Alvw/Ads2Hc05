@@ -1,28 +1,21 @@
-#include <msp430.h>
+//#include <msp430.h>
+#include "io430.h"
 #include "ads1292.h"
 
 uchar spiRxBuf[9];
 uchar* AFE_CharBuff;
 //uchar reg_map_debug[10];
 const uchar regValues[] = {0x02, //reg 0x01  Set sampling ratio to 500 SPS
-                          0xE3,  //reg 0x02 Set internal reference PDB_REFBUF = 1; int test enable
+                          0xE0,  //reg 0x02 Set internal reference PDB_REFBUF = 1; int test enable
                           0x10,  //reg 0x03 
-                          0x05,  //reg 0x04 Set Channel 1 to test
-                          0x81,  //reg 0x05 Set Channel 2 to Input Short and disable
+                          0x01,  //reg 0x04 Set Channel 1 to test
+                          0x00,  //reg 0x05 Set Channel 2 to Input Short and disable
                           0x20,  //reg 0x06 Turn on Drl.
                           0x00,  //reg 0x07 
                           0x40,  //reg 0x08 clock divider Fclc/16 2048mHz external clock
                           0x02,  //reg 0x09 Set mandatory bit. RLD REF INT doesn't work without it.
                           0x03}; //reg 0x0A Set RLDREF_INT
 
-//  AFE_Write_Reg(0x44, 0x01);                 //Set Channel 1 to test
-//  AFE_Write_Reg(0x45, 0x81);                 //Set Channel 2 to Input Short and disable
-//  AFE_Write_Reg(0x41, 0x02);                //Set sampling ratio to 500 SPS
-//  AFE_Write_Reg(0x42, 0xE0);      	//Set internal reference PDB_REFBUF = 1; int test enable
-//  AFE_Write_Reg(0x46, 0x20);         	    //Turn on Drl.
-//  AFE_Write_Reg(0x48, 0x40);                //clock divider Fclc/16 2048mHz external clock
-//  AFE_Write_Reg(0x49, 0x02); //Set mandatory bit. RLD REF INT doesn't work without it.
-//  AFE_Write_Reg(0x4A, 0x03);				//Set RLDREF_INT
 /******************************************************************************/
 /*                      ADS1292 initialization and start up sequence          */
 /******************************************************************************/
@@ -69,34 +62,6 @@ void AFE_Init(){
   AFE_RESET_OUT |= AFE_RESET_PIN;
   __delay_cycles(800);                         //delay before using ADS1292
   AFE_Cmd(0x11);                                 //stop continious
-//  uchar val[1] = {0x01};
-//  AFE_Write_Reg(0x44, 1,val);                 //Set Channel 1 to test
-//  AFE_Write_Reg(0x45,1, 0x81);                 //Set Channel 2 to Input Short and disable
-//  AFE_Write_Reg(0x41,1, 0x02);                //Set sampling ratio to 500 SPS
-//  AFE_Write_Reg(0x42,1, 0xE0);      	//Set internal reference PDB_REFBUF = 1; int test enable
-//  AFE_Write_Reg(0x46,1, 0x20);         	    //Turn on Drl.
-//  AFE_Write_Reg(0x48,1, 0x40);                //clock divider Fclc/16 2048mHz external clock
-//  AFE_Write_Reg(0x49,1, 0x02); //Set mandatory bit. RLD REF INT doesn't work without it.
-//  AFE_Write_Reg(0x4A,1, 0x03);				//Set RLDREF_INT
-  
-//  uchar val[1] = {0x01};
-//  AFE_Write_Reg(0x04, 1,val);                 //Set Channel 1 to test
-//  val[0] = 0x81;
-//  AFE_Write_Reg(0x05,1, val);                 //Set Channel 2 to Input Short and disable
-//  val[0] = 0x02;
-//  AFE_Write_Reg(0x01,1, val);                //Set sampling ratio to 500 SPS
-//  val[0] = 0xE0;
-//  AFE_Write_Reg(0x02,1, val);      	//Set internal reference PDB_REFBUF = 1; int test enable
-//  val[0] = 0x20;
-//  AFE_Write_Reg(0x06,1, val);         	    //Turn on Drl.
-//  val[0] = 0x40;
-//  AFE_Write_Reg(0x08,1, val);                //clock divider Fclc/16 2048mHz external clock
-//  val[0] = 0x02;
-//  AFE_Write_Reg(0x09,1, val); //Set mandatory bit. RLD REF INT doesn't work without it.
-//  val[0] = 0x03;
-//  AFE_Write_Reg(0x0A,1, val);				//Set RLDREF_INT
-  
-  //AFE_Read_Reg(0x01,0x0A,reg_map_debug);
   AFE_Write_Reg(0x01,0x0A,regValues);
   AFE_Cmd(0x10);                         //start continious
   AFE_START_OUT |= AFE_START_PIN;                           //start pin hi

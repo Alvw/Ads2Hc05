@@ -1,4 +1,5 @@
-#include <msp430.h>
+//#include <msp430.h>
+#include "io430.h"
 #include "subroutine.h"
 #include "rf.h"
 #include "ads1292.h"
@@ -9,7 +10,6 @@ void assemblePacketAndSend();
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
 uchar pctDataReady = 0;
-uchar debugLostFrames = 0;//!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 
 int main(void)
 {
@@ -19,31 +19,34 @@ int main(void)
   AFE_Init();
   rf_init();
   __enable_interrupt();
+ // rf_prog_and_bind();
 
  while (1)
  {
-   if(rf_rx_data_ready_fg){
+   if(rf_rx_data_ready_fg)
+   {
      onRF_MessageReceived();
      rf_rx_data_ready_fg = 0;
    }
-   if (pctDataReady) {       
+   if (pctDataReady) 
+   {       
      uchar packetSize = assemblePacket();
-     if(!rf_tx_in_progress){
+     if(!rf_tx_in_progress)
+     {
        rf_send((uchar*)&packet_buf[0], packetSize);
      }
-//     }else{
-//       __delay_cycles(160);!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!crazy bug. Check!!!!!!!!!!!!
-//     }
      pctDataReady = 0;      
    }
-   if (pctDataReady){
+   if (pctDataReady)
+   {
      __delay_cycles(160);
    }
-   //if(rf_rx_data_ready_fg || pctDataReady){
-   //идем по циклу снова
-   //}else{
+   if(rf_rx_data_ready_fg || pctDataReady)
+   {
+  // идем по циклу снова
+   }else{
    __bis_SR_register(CPUOFF + GIE); // ”ходим в сп€щий режим 
-   // }
+   }
  }
 } 
 /*-----------------ќбработка полученного с компьютера сообщени€--------------*/
@@ -97,7 +100,6 @@ void onRF_MultiByteMessage(){
 #pragma vector = PORT1_VECTOR
 __interrupt void Port1_ISR(void)
 {
-  debugLostFrames++;
   if (P1IFG & AFE_DRDY_PIN) { 
     P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
     long new_data[6];// = {15,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10

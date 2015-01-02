@@ -1,4 +1,5 @@
-#include <msp430.h>
+//#include <msp430.h>
+#include "io430.h"
 #include "subroutine.h"
 
 //Инициализация микроконтроллера

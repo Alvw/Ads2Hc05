@@ -1,4 +1,5 @@
-#include <msp430.h>
+//#include <msp430.h>
+#include "io430.h"
 #include "rf.h"
 #include "string.h"
 #include "subroutine.h"
@@ -39,7 +40,7 @@ void rf_init(){
     
   //configure UART 38400
 //  P3SEL |= 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
-//  UCA0CTL1 |= UCSSEL_2;                    // SMCLC
+//  UCA0CTL1 |= UCSSEL_1;                    // SMCLC
 //  UCA0BR0 = 160;                            // 16 MHz  38400
 //  UCA0BR1 = 1;                              // 16 MHz  38400
 //  UCA0MCTL = UCBRS2 + UCBRS1;               	 // Modulation UCBRSx = 6
@@ -49,11 +50,12 @@ void rf_init(){
 
 void rf_prog_and_bind(){
   __delay_cycles(16000000);
+  //sendAtCommand("AT+ROLE?\r\n");
   sendAtCommand("AT+ROLE=1\r\n");
   sendAtCommand("AT+NAME=BIMETER\r\n");
   sendAtCommand("AT+UART=230400,1,0\r\n");
   sendAtCommand("AT+RMAAD\r\n");
-  sendAtCommand("AT+BIND=14,1,211704\r\n");
+  sendAtCommand("AT+BIND=14,1,211079\r\n");
   sendAtCommand("AT+CMODE=0\r\n");
   sendAtCommand("AT+ADDR?\r\n");
   led(1);
