@@ -20,6 +20,10 @@ void sys_init(){
   BCSCTL3 |= LFXT1S1;                       // 3 – 16MHz crystal or resonator
   IE1 |= OFIE;                              // Enable osc fault interrupt 
   
+  //LED
+  P1DIR |= BIT7;
+   P1OUT &= ~BIT7;
+  
 // Неиспользуемые выводы
   P1DIR |= BIT1 + BIT3 + BIT5 + BIT6;
   P1OUT &= ~(BIT1 + BIT3 + BIT5 + BIT6);
@@ -54,3 +58,15 @@ void led(uchar state){
     P1OUT &=~BIT7;
   }
 }
+
+/* --------------------- Индикатор "питание" -------------------- */
+void Pwr_Indication()
+{
+  P1OUT &=~BIT7;
+  for (unsigned char cntr = 0; cntr < 6; cntr++) // Мигаем 3 раза
+     {
+       P1OUT ^= BIT7;
+       __delay_cycles(3200000);
+     } 
+}
+/* -------------------------------------------------------------------------- */

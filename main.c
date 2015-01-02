@@ -19,6 +19,7 @@ int main(void)
   ADC10_Init();
   AFE_Init();
   rf_init();
+  Pwr_Indication();
   __enable_interrupt();
  // rf_prog_and_bind();
 
@@ -110,10 +111,6 @@ __interrupt void Port1_ISR(void)
     if(pctAddNewData(new_data)){
       pctDataReady = 1;
       __bic_SR_register_on_exit(CPUOFF); // Не возвращаемся в сон при выходе
-    }
-    
-    if (P1IFG & BIT0) { 
-      P1IFG &= ~BIT0;  
     }
   }
 }
