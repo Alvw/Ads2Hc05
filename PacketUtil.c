@@ -14,8 +14,8 @@ uint packet_cntr = 0;
 long* add_buf = &buf1[0];
 long* packet_buf = &buf2[0];
 uchar div[NUMBER_OF_CHANNELS] ={1,1,10,10,10,10}; // frequency dividers for each channel. div = 0 if channel is not active.
-uchar buffCounter[NUMBER_OF_CHANNELS]; // buffCounter[i]_max = ( MAX_DIV / div[i] )  - number of "long" to buffer data from channel i
-uchar sumCounter[NUMBER_OF_CHANNELS]; // sumCounter[i]_max = div[i] - how many times we sum input data from channel i to have average output data
+uchar buffCounter[NUMBER_OF_CHANNELS] = {0,0,0,0,0,0}; // buffCounter[i]_max = ( MAX_DIV / div[i] )  - number of "long" to buffer data from channel i
+uchar sumCounter[NUMBER_OF_CHANNELS]= {0,0,0,0,0,0}; // sumCounter[i]_max = div[i] - how many times we sum input data from channel i to have average output data
 
 uchar pctAddNewData(long* newData) {
   uchar isAccumulatingFinished = 0;

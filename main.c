@@ -10,6 +10,7 @@ void assemblePacketAndSend();
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
 uchar pctDataReady = 0;
+long new_data[6];//todo make local!!!!!!!!!!!!!!!!
 
 int main(void)
 {
@@ -102,7 +103,7 @@ __interrupt void Port1_ISR(void)
 {
   if (P1IFG & AFE_DRDY_PIN) { 
     P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
-    long new_data[6];// = {15,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
+   // long new_data[6];// = {3,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
     AFE_Read_Data(&new_data[0]);
     ADC10_Read_Data(&new_data[2]);
     ADC10_Measure();

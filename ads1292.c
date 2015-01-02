@@ -6,10 +6,10 @@ uchar spiRxBuf[9];
 uchar* AFE_CharBuff;
 //uchar reg_map_debug[10];
 const uchar regValues[] = {0x02, //reg 0x01  Set sampling ratio to 500 SPS
-                          0xE0,  //reg 0x02 Set internal reference PDB_REFBUF = 1; int test enable
+                          0xE3,  //reg 0x02 Set internal reference PDB_REFBUF = 1; int test enable
                           0x10,  //reg 0x03 
-                          0x01,  //reg 0x04 Set Channel 1 to test
-                          0x00,  //reg 0x05 Set Channel 2 to Input Short and disable
+                          0x05,  //reg 0x04 Set Channel 1 to test
+                          0x05,  //reg 0x05 Set Channel 2 to Input Short and disable
                           0x20,  //reg 0x06 Turn on Drl.
                           0x00,  //reg 0x07 
                           0x40,  //reg 0x08 clock divider Fclc/16 2048mHz external clock
@@ -140,7 +140,7 @@ void AFE_Read_Data(long* result){
   AFE_CharBuff[3] = spiRxBuf[6];
   AFE_CharBuff[2] = spiRxBuf[7];
   AFE_CharBuff[1] = spiRxBuf[8];
-  result[0] = result[0] >> 8;
+  result[1] = result[1] >> 8;
 }
 
 
