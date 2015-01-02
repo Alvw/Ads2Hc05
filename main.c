@@ -13,15 +13,12 @@ uchar debugLostFrames = 0;//!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 
 int main(void)
 {
- //__disable_interrupt();
+  __disable_interrupt();
   sys_init();
   ADC10_Init();
   AFE_Init();
   rf_init();
-  // __disable_interrupt();
-  
- // __enable_interrupt();
-  //rf_prog_and_bind();
+  __enable_interrupt();
 
  while (1)
  {
@@ -32,13 +29,21 @@ int main(void)
    if (pctDataReady) {       
      uchar packetSize = assemblePacket();
      if(!rf_tx_in_progress){
-        rf_send((uchar*)&packet_buf[0], packetSize);
-     }else{
-        debugLostFrames++;
+       rf_send((uchar*)&packet_buf[0], packetSize);
      }
+//     }else{
+//       __delay_cycles(160);!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!crazy bug. Check!!!!!!!!!!!!
+//     }
      pctDataReady = 0;      
    }
+   if (pctDataReady){
+     __delay_cycles(160);
+   }
+   //if(rf_rx_data_ready_fg || pctDataReady){
+   //идем по циклу снова
+   //}else{
    __bis_SR_register(CPUOFF + GIE); // Уходим в спящий режим 
+   // }
  }
 } 
 /*-----------------Обработка полученного с компьютера сообщения--------------*/
@@ -92,15 +97,20 @@ void onRF_MultiByteMessage(){
 #pragma vector = PORT1_VECTOR
 __interrupt void Port1_ISR(void)
 {
+  debugLostFrames++;
   if (P1IFG & AFE_DRDY_PIN) { 
     P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
-    long new_data[6];// = {10,10,10,10,10,10};//2 ch ADS1292 + 4ch ADC10
-AFE_Read_Data(&new_data[0]);
-ADC10_Read_Data(&new_data[2]);
+    long new_data[6];// = {15,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
+    AFE_Read_Data(&new_data[0]);
+    ADC10_Read_Data(&new_data[2]);
     ADC10_Measure();
     if(pctAddNewData(new_data)){
       pctDataReady = 1;
       __bic_SR_register_on_exit(CPUOFF); // Не возвращаемся в сон при выходе
+    }
+    
+    if (P1IFG & BIT0) { 
+      P1IFG &= ~BIT0;  
     }
   }
 }
