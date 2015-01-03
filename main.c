@@ -45,7 +45,6 @@ int main(void)
 } 
 /*-----------------Обработка полученного с компьютера сообщения--------------*/
 void onRF_MessageReceived(){
-  if(rf_rx_buf[0]>rf_rx_buf_size){
     switch(rf_rx_buf[0]){
     case 0xFF: //stop recording command
       AFE_StopRecording();
@@ -60,15 +59,16 @@ void onRF_MessageReceived(){
       //todo send firmware vercion
       break;
     default:
-      //проверяем два последних байта == маркер конца пакета
-      if(((rf_rx_buf[rf_rx_buf[0]-1] == 0x55) && (rf_rx_buf[rf_rx_buf[0]-2] == 0x55))){
-        onRF_MultiByteMessage();
-      }else{
-        //todo send error message
+      if(rf_rx_buf[0] <= rf_rx_buf_size){//проверяем длину команды
+        //проверяем два последних байта == маркер конца пакета
+        if(((rf_rx_buf[rf_rx_buf[0]-1] == 0x55) && (rf_rx_buf[rf_rx_buf[0]-2] == 0x55))){
+          onRF_MultiByteMessage();
+        }else{
+          //todo send error message
+        }
       }
       break;
     }
-  }
 }
 
 void onRF_MultiByteMessage(){

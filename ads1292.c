@@ -61,10 +61,10 @@ void AFE_Init(){
   __delay_cycles(320);                         //Reset low width
   AFE_RESET_OUT |= AFE_RESET_PIN;
   __delay_cycles(800);                         //delay before using ADS1292
-  AFE_Cmd(0x11);                                 //stop continious
+  AFE_Cmd(0x11);                                 //stop continuous 
   AFE_Write_Reg(0x01,0x0A,regValues);
-  AFE_Cmd(0x10);                         //start continious
-  AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
+  AFE_Cmd(0x10);                         //start continuous 
+  //AFE_START_OUT |= AFE_START_PIN;                           //start pin hi
 }
 
 void AFE_StartRecording(){

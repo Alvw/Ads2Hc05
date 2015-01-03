@@ -85,6 +85,7 @@ __interrupt void USCI0RX_ISR(void) {
 
 void startRFSending() {
   rf_tx_in_progress = 1;
+  led(1);
   rf_tx_cntr = 0;
   while (!(IFG2 & UCA0TXIFG));
   IFG2 &= ~UCA0TXIFG;                     //tx flag reset!!!!!!!!!
@@ -100,6 +101,7 @@ __interrupt void USCI0TX_ISR(void) {
   if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
     IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
     rf_tx_in_progress = 0;
+    led(0);
   }
 }
 
