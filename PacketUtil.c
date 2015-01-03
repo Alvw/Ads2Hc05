@@ -3,17 +3,13 @@
 #include "PacketUtil.h"
 #include "string.h"
 
-enum {
-	PACKET_BUFF_MAX_SIZE = 25, //1 header + 10 * 2 ch ADS data + 3ch Accelerometer data + 1ch acb voltage data 
-        NUMBER_OF_CHANNELS = 6, //2ch ADS, 3ch accelerometer, 1ch battery
-        MAX_DIV = 10
-}; 
+ 
 long buf1[PACKET_BUFF_MAX_SIZE];
 long buf2[PACKET_BUFF_MAX_SIZE];
 uint packet_cntr = 0;
 long* add_buf = &buf1[0];
 long* packet_buf = &buf2[0];
-uchar div[NUMBER_OF_CHANNELS] ={1,1,0,0,0,0}; // frequency dividers for each channel. div = 0 if channel is not active.
+uchar div[NUMBER_OF_CHANNELS] ={1,1,10,10,10,0}; // frequency dividers for each channel. div = 0 if channel is not active.
 uchar offsetCounter[NUMBER_OF_CHANNELS] = {0,0,0,0,0,0}; // offsetCounter[i]_max = ( MAX_DIV / div[i] )  - number of "long" to buffer data from channel i
 uchar sumCounter[NUMBER_OF_CHANNELS]= {0,0,0,0,0,0}; // sumCounter[i]_max = div[i] - how many times we sum input data from channel i to have average output data
 uchar loffStatEnable = 0;//0 - disable, 1 - enable

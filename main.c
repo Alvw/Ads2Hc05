@@ -47,16 +47,16 @@ int main(void)
 void onRF_MessageReceived(){
   if(rf_rx_buf[0]>rf_rx_buf_size){
     switch(rf_rx_buf[0]){
-    case 255: //stop recording command
+    case 0xFF: //stop recording command
       AFE_StopRecording();
       break;
-    case 254: //start recording command
+    case 0xFE: //start recording command
       AFE_StartRecording();
       break;
-    case 253: //hello command
+    case 0xFD: //hello command
       //todo send hello command
       break;
-    case 252: //версия прошивки
+    case 0xFC: //версия прошивки
       //todo send firmware vercion
       break;
     default:
@@ -74,17 +74,38 @@ void onRF_MessageReceived(){
 void onRF_MultiByteMessage(){
   uchar msgOffset = 1;
   while (msgOffset < (rf_rx_buf[0]-2)){
-    if(rf_rx_buf[msgOffset] == 0x01){//Запись регистров ads1292
-     // AFE_Write_Reg(uchar addr, uchar value);
+    if(rf_rx_buf[msgOffset] == 0xF0){//команда для ads1292
+      AFE_Cmd(rf_rx_buf[msgOffset+1]);
+      msgOffset+=2;
+    }
+    if(rf_rx_buf[msgOffset] == 0xF1){//Запись регистров ads1292
+      AFE_Write_Reg(rf_rx_buf[msgOffset+1], rf_rx_buf[msgOffset+2], &rf_rx_buf[msgOffset+3]);
       msgOffset+=rf_rx_buf[msgOffset+2]+3;
     }
-    if(rf_rx_buf[msgOffset] == 0x02){//делители частоты для ads1292 и акселерометра
-      //todo запись делителей, проверка значений.
-      msgOffset+=4;
+    if(rf_rx_buf[msgOffset] == 0xF2){//делители частоты для ads1292 2 значения
+      for(int i = 0; i<2; i++){
+        if((rf_rx_buf[msgOffset+1+i] == 0) || (rf_rx_buf[msgOffset+1+i] == 1) || 
+           (rf_rx_buf[msgOffset+1+i] == 2) || (rf_rx_buf[msgOffset+1+i] == 5) || (rf_rx_buf[msgOffset+1+i] == 10)){
+          div[i] = rf_rx_buf[msgOffset+1+i]; 
+        }
+      }
+      msgOffset+=3;
     }
-    if(rf_rx_buf[msgOffset] == 0x03){//Режим работы акселерометра
-      //todo 
+    if(rf_rx_buf[msgOffset] == 0xF3){//Режим работы акселерометра
+      setAccelerometerMode(rf_rx_buf[msgOffset+1]);
       msgOffset+=2;
+    }
+    if(rf_rx_buf[msgOffset] == 0xF4){//передача данных loff статуса 
+      loffStatEnable = rf_rx_buf[msgOffset+1];
+      msgOffset+=2;
+    }
+    if(rf_rx_buf[msgOffset] == 0xFF){//stop recording command 
+       AFE_StopRecording();
+       msgOffset+=1;
+    }
+    if(rf_rx_buf[msgOffset] == 0xFE){//start recording command 
+       AFE_StartRecording();
+       msgOffset+=1;
     }
   }
 }
@@ -96,7 +117,7 @@ __interrupt void Port1_ISR(void)
 {
   if (P1IFG & AFE_DRDY_PIN) { 
     P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
-    long new_data[6];// = {3,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
+    long new_data[6];
     AFE_Read_Data(&new_data[0]);
     loffStat = AFE_getLoffStatus();
     ADC10_Read_Data(&new_data[2]);
