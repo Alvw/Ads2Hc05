@@ -9,8 +9,8 @@
 void assemblePacketAndSend();
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
-uchar pctDataReady = 0;
-long new_data[6];//todo make local!!!!!!!!!!!!!!!!
+uchar packetDataReady = 0;
+
 
 int main(void)
 {
@@ -25,26 +25,21 @@ int main(void)
 
  while (1)
  {
-   if(rf_rx_data_ready_fg)
-   {
+   if(rf_rx_data_ready_fg) {
      onRF_MessageReceived();
      rf_rx_data_ready_fg = 0;
    }
-   if (pctDataReady) 
-   {       
+   if (packetDataReady){       
      uchar packetSize = assemblePacket();
-     if(!rf_tx_in_progress)
-     {
+     if(!rf_tx_in_progress){
        rf_send((uchar*)&packet_buf[0], packetSize);
      }
-     pctDataReady = 0;      
+     packetDataReady = 0;      
    }
-   if (pctDataReady)
-   {
+   if (packetDataReady){
      __delay_cycles(160);
    }
-   if(rf_rx_data_ready_fg || pctDataReady)
-   {
+   if(rf_rx_data_ready_fg || packetDataReady){
   // идем по циклу снова
    }else{
    __bis_SR_register(CPUOFF + GIE); // Уходим в спящий режим 
@@ -104,12 +99,12 @@ __interrupt void Port1_ISR(void)
 {
   if (P1IFG & AFE_DRDY_PIN) { 
     P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
-   // long new_data[6];// = {3,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
+    long new_data[6];// = {3,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
     AFE_Read_Data(&new_data[0]);
     ADC10_Read_Data(&new_data[2]);
     ADC10_Measure();
-    if(pctAddNewData(new_data)){
-      pctDataReady = 1;
+    if(packetAddNewData(new_data)){
+      packetDataReady = 1;
       __bic_SR_register_on_exit(CPUOFF); // Не возвращаемся в сон при выходе
     }
   }

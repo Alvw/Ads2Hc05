@@ -17,7 +17,6 @@ uchar* rf_tx_buf;
 uchar rf_tx_cntr = 0;
 uchar rf_rx_cntr = 0;
 uchar rf_tx_data_size;
-uchar tmp; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!delete
 
 void rf_init(){
   //Reset pin p3.7 and Programming mode pin p3.6
@@ -96,8 +95,7 @@ void startRFSending() {
 
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0TX_ISR(void) {
-  tmp = rf_tx_buf[rf_tx_cntr++];
-  UCA0TXBUF = tmp;
+  UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];
   //UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];           // TX next character
   if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
     IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt

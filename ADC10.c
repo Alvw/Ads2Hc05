@@ -34,6 +34,6 @@ void ADC10_Measure()
 
 void ADC10_Read_Data(long* result){
   for(int i = 0; i < 4; i++){
-    result[i] = ADC10_DMA_Data[i];
+    result[i] = ADC10_DMA_Data[3-i];
   }
 }

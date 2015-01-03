@@ -4,38 +4,38 @@
 #include "string.h"
 
 enum {
-	PCT_BUFF_MAX_SIZE = 26, //1 header + 10 * 2 ch ADS data + 3ch Accelerometer data + 1ch acb voltage data + 1 loff&system
+	PACKET_BUFF_MAX_SIZE = 26, //1 header + 10 * 2 ch ADS data + 3ch Accelerometer data + 1ch acb voltage data + 1 loff&system
         NUMBER_OF_CHANNELS = 6, //2ch ADS, 3ch accelerometer, 1ch battery
         MAX_DIV = 10
 }; 
-long buf1[PCT_BUFF_MAX_SIZE];
-long buf2[PCT_BUFF_MAX_SIZE];
+long buf1[PACKET_BUFF_MAX_SIZE];
+long buf2[PACKET_BUFF_MAX_SIZE];
 uint packet_cntr = 0;
 long* add_buf = &buf1[0];
 long* packet_buf = &buf2[0];
 uchar div[NUMBER_OF_CHANNELS] ={1,1,10,10,10,10}; // frequency dividers for each channel. div = 0 if channel is not active.
-uchar buffCounter[NUMBER_OF_CHANNELS] = {0,0,0,0,0,0}; // buffCounter[i]_max = ( MAX_DIV / div[i] )  - number of "long" to buffer data from channel i
+uchar offsetCounter[NUMBER_OF_CHANNELS] = {0,0,0,0,0,0}; // offsetCounter[i]_max = ( MAX_DIV / div[i] )  - number of "long" to buffer data from channel i
 uchar sumCounter[NUMBER_OF_CHANNELS]= {0,0,0,0,0,0}; // sumCounter[i]_max = div[i] - how many times we sum input data from channel i to have average output data
 
-uchar pctAddNewData(long* newData) {
+uchar packetAddNewData(long* newData) {
   uchar isAccumulatingFinished = 0;
   uchar j = 0;
   for (uchar i = 0; i < NUMBER_OF_CHANNELS; i++) {
     if (div[i] != 0) {
       if(sumCounter[i] == 0){
-        add_buf[1 + j + buffCounter[i]] = 0;
+        add_buf[1 + j + offsetCounter[i]] = 0;
       }
-      add_buf[1 + j + buffCounter[i]] += newData[i];
+      add_buf[1 + j + offsetCounter[i]] += newData[i];
       sumCounter[i]++;
       if (sumCounter[i] == div[i]) {
-        buffCounter[i]++;
-        if ((sumCounter[i] * buffCounter[i]) == MAX_DIV) {
+        offsetCounter[i]++;
+        if ((sumCounter[i] * offsetCounter[i]) == MAX_DIV) {
           isAccumulatingFinished = 1;
-          buffCounter[i] = 0;
+          offsetCounter[i] = 0;
         }
         sumCounter[i] = 0;
       }
-      j += (MAX_DIV / div[i]);      // j += buffCounter[i]_max
+      j += (MAX_DIV / div[i]);      // j += offsetCounter[i]_max
     }
   }
   if(isAccumulatingFinished){
