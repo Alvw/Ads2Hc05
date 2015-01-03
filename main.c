@@ -36,9 +36,6 @@ int main(void)
      }
      packetDataReady = 0;      
    }
-   if (packetDataReady){
-     __delay_cycles(160);
-   }
    if(rf_rx_data_ready_fg || packetDataReady){
   // идем по циклу снова
    }else{
@@ -101,6 +98,7 @@ __interrupt void Port1_ISR(void)
     P1IFG &= ~AFE_DRDY_PIN;      // Clear DRDY flag
     long new_data[6];// = {3,5,2,4,6,8};//2 ch ADS1292 + 4ch ADC10
     AFE_Read_Data(&new_data[0]);
+    loffStat = AFE_getLoffStatus();
     ADC10_Read_Data(&new_data[2]);
     ADC10_Measure();
     if(packetAddNewData(new_data)){

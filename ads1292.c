@@ -121,7 +121,7 @@ void AFE_Read_Reg(uchar addr, uchar numOfBytes, uchar* regBuf) {
   AFE_CS_OUT &= ~AFE_CS_PIN;                    // CS enable
   AFE_SPI_Exchange(addr | 0x20);                       // Send address
   AFE_SPI_Exchange(numOfBytes);                       // Send number bytes to read
-  for(uchar i = 0; i< numOfBytes; i++){
+  for(uchar i = 0; i < numOfBytes; i++){
     regBuf[i] = AFE_SPI_Exchange(0x00);
   }   
   AFE_CS_DELAY;
@@ -141,6 +141,11 @@ void AFE_Read_Data(long* result){
   AFE_CharBuff[2] = spiRxBuf[7];
   AFE_CharBuff[1] = spiRxBuf[8];
   result[1] = result[1] >> 8;
+}
+
+uchar AFE_getLoffStatus(){
+  uchar result = ((spiRxBuf[0]<<1)&0x0E) | ((spiRxBuf[1]>>7)&0x01);
+  return result;
 }
 
 
