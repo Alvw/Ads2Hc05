@@ -6,11 +6,12 @@
 #include "ADC10.h"
 #include "PacketUtil.h"
 
-void assemblePacketAndSend();
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
 uchar packetDataReady = 0;
-
+uchar helloMsg[] = {0xAA, 0x55, 0x05, 0xA0, 0x55};//todo change to const!!!!!!!!!!!!!!!1
+uchar firmwareVersion[] = {0xAA, 0x55, 0x07, 0xA1,0x01,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!
+uchar errMsg[] = {0xAA, 0x55, 0x07, 0xA2,0x00,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!1
 
 int main(void)
 {
@@ -53,10 +54,10 @@ void onRF_MessageReceived(){
       AFE_StartRecording();
       break;
     case 0xFD: //hello command
-      //todo send hello command
+      rf_send(helloMsg,5);
       break;
     case 0xFC: //версия прошивки
-      //todo send firmware vercion
+      rf_send(firmwareVersion,7);
       break;
     default:
       if(rf_rx_buf[0] <= rf_rx_buf_size){//проверяем длину команды
@@ -64,7 +65,7 @@ void onRF_MessageReceived(){
         if(((rf_rx_buf[rf_rx_buf[0]-1] == 0x55) && (rf_rx_buf[rf_rx_buf[0]-2] == 0x55))){
           onRF_MultiByteMessage();
         }else{
-          //todo send error message
+          rf_send(errMsg,7);
         }
       }
       break;
@@ -77,12 +78,10 @@ void onRF_MultiByteMessage(){
     if(rf_rx_buf[msgOffset] == 0xF0){//команда для ads1292
       AFE_Cmd(rf_rx_buf[msgOffset+1]);
       msgOffset+=2;
-    }
-    if(rf_rx_buf[msgOffset] == 0xF1){//Запись регистров ads1292
+    }else if(rf_rx_buf[msgOffset] == 0xF1){//Запись регистров ads1292
       AFE_Write_Reg(rf_rx_buf[msgOffset+1], rf_rx_buf[msgOffset+2], &rf_rx_buf[msgOffset+3]);
       msgOffset+=rf_rx_buf[msgOffset+2]+3;
-    }
-    if(rf_rx_buf[msgOffset] == 0xF2){//делители частоты для ads1292 2 значения
+    }else if(rf_rx_buf[msgOffset] == 0xF2){//делители частоты для ads1292 2 значения
       for(int i = 0; i<2; i++){
         if((rf_rx_buf[msgOffset+1+i] == 0) || (rf_rx_buf[msgOffset+1+i] == 1) || 
            (rf_rx_buf[msgOffset+1+i] == 2) || (rf_rx_buf[msgOffset+1+i] == 5) || (rf_rx_buf[msgOffset+1+i] == 10)){
@@ -90,22 +89,21 @@ void onRF_MultiByteMessage(){
         }
       }
       msgOffset+=3;
-    }
-    if(rf_rx_buf[msgOffset] == 0xF3){//Режим работы акселерометра
+    }else if(rf_rx_buf[msgOffset] == 0xF3){//Режим работы акселерометра
       setAccelerometerMode(rf_rx_buf[msgOffset+1]);
       msgOffset+=2;
-    }
-    if(rf_rx_buf[msgOffset] == 0xF4){//передача данных loff статуса 
+    }else if(rf_rx_buf[msgOffset] == 0xF4){//передача данных loff статуса 
       loffStatEnable = rf_rx_buf[msgOffset+1];
       msgOffset+=2;
-    }
-    if(rf_rx_buf[msgOffset] == 0xFF){//stop recording command 
+    }else if(rf_rx_buf[msgOffset] == 0xFF){//stop recording command 
        AFE_StopRecording();
        msgOffset+=1;
-    }
-    if(rf_rx_buf[msgOffset] == 0xFE){//start recording command 
+    }else if(rf_rx_buf[msgOffset] == 0xFE){//start recording command 
        AFE_StartRecording();
        msgOffset+=1;
+    }else{
+      rf_send(errMsg,7);
+      return;
     }
   }
 }
@@ -129,7 +127,3 @@ __interrupt void Port1_ISR(void)
   }
 }
 /* -------------------------------------------------------------------------- */
-
-void assemblePacketAndSend(){
-
-}
