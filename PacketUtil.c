@@ -15,6 +15,12 @@ uchar sumCounter[NUMBER_OF_CHANNELS]= {0,0,0,0,0,0}; // sumCounter[i]_max = div[
 uchar loffStatEnable = 0;//0 - disable, 1 - enable
 uchar loffStat;
 
+void packetUtilResetCounters(){
+  memset(offsetCounter, 0, NUMBER_OF_CHANNELS); 
+  memset(sumCounter, 0, NUMBER_OF_CHANNELS); 
+  packet_cntr = 0;
+}
+
 void setAccelerometerMode(uchar mode){//0 - disable, 1 - enable;
   for(uchar i = 0; i<3; i++){
     if(mode){

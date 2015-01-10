@@ -51,6 +51,7 @@ void onRF_MessageReceived(){
       AFE_StopRecording();
       break;
     case 0xFE: //start recording command
+      packetUtilResetCounters();
       AFE_StartRecording();
       break;
     case 0xFD: //hello command

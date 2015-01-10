@@ -27,13 +27,13 @@ void rf_init(){
   P3OUT |= BIT7;
   __delay_cycles(1600000);
   
-  //configure UART 230400
+  //configure UART 460800
     P3SEL |= 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
     //UCA0CTL1 |= UCSSEL_2;                    // SMCLC
     UCA0CTL1 |= UCSSEL_1;                    // ACLC
-    UCA0BR0 = 69;                            // 16,000 MHz  230400
+    UCA0BR0 = 34;                            // 16,000 MHz  460800
     UCA0BR1 = 0;                             
-    UCA0MCTL = UCBRS2;               	 // Modulation UCBRSx = 4
+    UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;               	 // Modulation UCBRSx = 7
     UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
     IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
     
@@ -52,7 +52,7 @@ void rf_prog_and_bind(){
   //sendAtCommand("AT+ROLE?\r\n");
   sendAtCommand("AT+ROLE=1\r\n");
   sendAtCommand("AT+NAME=BIMETER\r\n");
-  sendAtCommand("AT+UART=230400,1,0\r\n");
+  sendAtCommand("AT+UART=460800,1,0\r\n");
   sendAtCommand("AT+RMAAD\r\n");
   sendAtCommand("AT+BIND=14,1,211079\r\n");
   sendAtCommand("AT+CMODE=0\r\n");
@@ -85,7 +85,6 @@ __interrupt void USCI0RX_ISR(void) {
 
 void startRFSending() {
   rf_tx_in_progress = 1;
-  led(1);
   rf_tx_cntr = 0;
   while (!(IFG2 & UCA0TXIFG));
   IFG2 &= ~UCA0TXIFG;                     //tx flag reset!!!!!!!!!
@@ -101,7 +100,6 @@ __interrupt void USCI0TX_ISR(void) {
   if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
     IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
     rf_tx_in_progress = 0;
-    led(0);
   }
 }
 

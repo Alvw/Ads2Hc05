@@ -13,4 +13,5 @@ extern uchar div[NUMBER_OF_CHANNELS];
 extern uchar loffStatEnable;//0 - disable, 1 - enable
 extern uchar loffStat;//loff stat value;
 void setAccelerometerMode(uchar mode);//0 - disable, 1 - 1channel mode, 3 - 3 channel mode;
+void packetUtilResetCounters();
  
