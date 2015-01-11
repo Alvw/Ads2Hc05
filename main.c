@@ -100,6 +100,7 @@ void onRF_MultiByteMessage(){
        AFE_StopRecording();
        msgOffset+=1;
     }else if(rf_rx_buf[msgOffset] == 0xFE){//start recording command 
+       packetUtilResetCounters();
        AFE_StartRecording();
        msgOffset+=1;
     }else{
