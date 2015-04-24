@@ -8,10 +8,16 @@
 
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
+void startRecording();
 uchar packetDataReady = 0;
 uchar helloMsg[] = {0xAA, 0x55, 0x05, 0xA0, 0x55};//todo change to const!!!!!!!!!!!!!!!1
 uchar firmwareVersion[] = {0xAA, 0x55, 0x07, 0xA1,0x01,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!
 uchar errMsg[] = {0xAA, 0x55, 0x07, 0xA2,0x00,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!1
+uchar pingCntr = 0; 
+uchar timerTask;
+//таймаут до перезагрузки RF модуля в количестве циклов таймера. 1 цикл таймера ~ 0.25 секунды.
+// 0 - перезагрузка отключена
+uint resetTimeout = 0; 
 
 int main(void)
 {
@@ -22,7 +28,6 @@ int main(void)
   rf_init();
   Pwr_Indication();
   __enable_interrupt();
- // rf_prog_and_bind();
 
  while (1)
  {
@@ -48,17 +53,20 @@ int main(void)
 void onRF_MessageReceived(){
     switch(rf_rx_buf[0]){
     case 0xFF: //stop recording command
+      TACCR0 = 0x00; //timer stop
       AFE_StopRecording();
       break;
     case 0xFE: //start recording command
-      packetUtilResetCounters();
-      AFE_StartRecording();
+      startRecording();
       break;
     case 0xFD: //hello command
       rf_send(helloMsg,5);
       break;
     case 0xFC: //версия прошивки
       rf_send(firmwareVersion,7);
+      break;
+    case 0xFB: //ping command
+      pingCntr = 0;
       break;
     default:
       if(rf_rx_buf[0] <= rf_rx_buf_size){//проверяем длину команды
@@ -96,18 +104,30 @@ void onRF_MultiByteMessage(){
     }else if(rf_rx_buf[msgOffset] == 0xF4){//передача данных loff статуса 
       loffStatEnable = rf_rx_buf[msgOffset+1];
       msgOffset+=2;
+    }else if(rf_rx_buf[msgOffset] == 0xF5){//RF reset timeout при отсутствии Ping команды с компьютера. 
+      resetTimeout = rf_rx_buf[msgOffset+1] * 4;
+      msgOffset+=2;
     }else if(rf_rx_buf[msgOffset] == 0xFF){//stop recording command 
+       TACCR0 = 0x00;
        AFE_StopRecording();
        msgOffset+=1;
     }else if(rf_rx_buf[msgOffset] == 0xFE){//start recording command 
-       packetUtilResetCounters();
-       AFE_StartRecording();
+       startRecording();
        msgOffset+=1;
     }else{
       rf_send(errMsg,7);
       return;
     }
   }
+}
+
+void startRecording(){
+       packetUtilResetCounters();
+       if(resetTimeout){
+        TACCR0 = 0xFFFF;
+        pingCntr = 0;
+       }
+       AFE_StartRecording();
 }
 
 /* ------------------------ Прерывание от P1 ----------------------- */
@@ -127,5 +147,27 @@ __interrupt void Port1_ISR(void)
       __bic_SR_register_on_exit(CPUOFF); // Не возвращаемся в сон при выходе
     }
   }
+  if (P1IFG & BIT0) { 
+    P1IFG &= ~BIT0;      // Clear BT connection status flag
+  }
 }
 /* -------------------------------------------------------------------------- */
+/* ------------------------- Прерывание от таймера -------------------------- */
+/* -------------------------------------------------------------------------- */
+#pragma vector = TIMERA1_VECTOR
+__interrupt void TimerA_ISR(void)
+{ 
+  TACTL &= ~TAIFG;
+  if(timerTask == 0x01){
+    P3OUT |= BIT7;//BT reset pin hi
+    timerTask = 0;
+  }
+  pingCntr++;
+  if(pingCntr > resetTimeout){//no signal from host for ~ resetTimeout * 4 seconds
+      P3OUT &= ~BIT7; //BT reset pin lo
+      timerTask = 0x01;
+      pingCntr = 0;
+  }
+}
+/* -------------------------------------------------------------------------- */ 
+

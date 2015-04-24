@@ -51,6 +51,7 @@ void AFE_Init(){
   
   //initialize DRDY pin (P1.2)
   P1REN |= AFE_DRDY_PIN; // Pull-UP/DOWN Resistors Enabled
+  //P1IES &= ~AFE_DRDY_PIN;       // Interrupt on rising edge
   P1IES |= AFE_DRDY_PIN;       // Interrupt on falling edge
   P1IFG &= ~AFE_DRDY_PIN;      // Clear flag
   P1IE |= AFE_DRDY_PIN;        // Enable interrupt on DRDY

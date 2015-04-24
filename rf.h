@@ -5,6 +5,7 @@ extern uchar rf_rx_buf_size;
 extern uchar rf_rx_buf[50];//заменить на костанту
 extern uchar rf_rx_data_ready_fg;
 
+void rf_reset();
 void rf_init();
 void rf_send(uchar* cmd, uchar length);
 void rf_prog_and_bind();

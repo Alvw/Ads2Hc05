@@ -22,7 +22,13 @@ void sys_init(){
   
   //LED
   P1DIR |= BIT7;
-   P1OUT &= ~BIT7;
+  P1OUT &= ~BIT7;
+  
+  //initialize BT_CON_STAT pin (P1.0)
+  P1REN |= BIT0; // Pull-UP/DOWN Resistors Enabled
+  P1IES &= ~BIT0;       // Interrupt on rising edge
+  P1IFG &= ~BIT0;      // Clear flag
+  P1IE |= BIT0;        // Enable interrupt on DRDY
   
 // Неиспользуемые выводы
   P1DIR |= BIT1 + BIT3 + BIT5 + BIT6;
@@ -35,7 +41,16 @@ void sys_init(){
   P3OUT &= ~BIT0;
   
   P4DIR |= BIT0 + BIT1 + BIT2 + BIT3;
-  P4OUT &= ~(BIT0 + BIT1 + BIT2 + BIT3);  
+  P4OUT &= ~(BIT0 + BIT1 + BIT2 + BIT3); 
+  
+  // Таймер  
+  TACTL_bit.TACLR  = 1; // Reset TAR, divider and count dir
+  TACTL = TASSEL_2;     // SMCLK
+  TACTL |= ID_2 + ID_1; // 1:8  
+  TACCR0 = 0x00;
+  TACTL_bit.TAIE = 1;   // INT enable 
+  TACTL &= ~TAIFG;      // Сброс прерывания
+  TACTL |= MC_1;
 }
 
 #pragma bis_nmi_ie1=OFIE                    // Re-enable osc fault interrupt

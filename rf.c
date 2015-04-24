@@ -18,14 +18,17 @@ uchar rf_tx_cntr = 0;
 uchar rf_rx_cntr = 0;
 uchar rf_tx_data_size;
 
+void rf_reset(){
+  P3OUT &= ~BIT7;
+  __delay_cycles(1600000);
+  P3OUT |= BIT7;
+}
+
 void rf_init(){
   //Reset pin p3.7 and Programming mode pin p3.6
   P3DIR |= BIT6 + BIT7;
   P3OUT &= ~BIT6;
-  P3OUT &= ~BIT7;
-  __delay_cycles(1600000);
-  P3OUT |= BIT7;
-  __delay_cycles(1600000);
+  rf_reset();
   
   //configure UART 460800
     P3SEL |= 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
@@ -96,7 +99,6 @@ void startRFSending() {
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0TX_ISR(void) {
   UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];
-  //UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];           // TX next character
   if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
     IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
     rf_tx_in_progress = 0;
