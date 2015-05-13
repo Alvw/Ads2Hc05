@@ -31,6 +31,14 @@ void setAccelerometerMode(uchar mode){//0 - disable, 1 - enable;
   }
 }
 
+void measureBatteryVoltage(uchar mode){//0 - disable, 1 - enable;
+    if(mode){
+      div[5] = 10;
+    }else{
+      div[5] = 0;
+    }
+}
+
 uchar packetAddNewData(long* newData) {
   uchar isAccumulatingFinished = 0;
   uchar j = 0;
@@ -84,13 +92,16 @@ uchar assemblePacket(){
   //Add accelerometer data
   for (uchar i = 2; i < 5; i++) {// 3 channels
     if (div[i] != 0) {
-      uchar numberOfSamplesInChannel = (MAX_DIV/div[i]);
-      for(uchar j = 0; j < numberOfSamplesInChannel; j++){
         packetCharBuff[charIndex++] = packetCharBuff[longIndex*4];
         packetCharBuff[charIndex++] = packetCharBuff[longIndex*4 + 1];
         longIndex++;
-      }
     }
+  }
+  //Add battery data
+  if (div[5] != 0) {
+        packetCharBuff[charIndex++] = packetCharBuff[longIndex*4];
+        packetCharBuff[charIndex++] = packetCharBuff[longIndex*4 + 1];
+        longIndex++;
   }
   //Add loff status if enabled
   if(loffStatEnable){

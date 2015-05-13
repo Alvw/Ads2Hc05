@@ -8,5 +8,6 @@ extern uchar rf_rx_data_ready_fg;
 void rf_reset();
 void rf_init();
 void rf_send(uchar* cmd, uchar length);
+void rf_send_after(uchar* cmd, uchar length);//отправляет данные после завершения отправки rf_send
 void rf_prog_and_bind();
 void sendAtCommand(uchar* cmd);

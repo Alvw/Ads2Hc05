@@ -13,6 +13,11 @@ uchar packetDataReady = 0;
 uchar helloMsg[] = {0xAA, 0x55, 0x05, 0xA0, 0x55};//todo change to const!!!!!!!!!!!!!!!1
 uchar firmwareVersion[] = {0xAA, 0x55, 0x07, 0xA1,0x01,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!
 uchar errMsg[] = {0xAA, 0x55, 0x07, 0xA2,0x00,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!1
+uchar midBatteryMessage[] = {0xAA, 0x55, 0x07, 0xA3,0x00,0x01, 0x55};
+uchar lowBatteryMessage[] = {0xAA, 0x55, 0x07, 0xA3,0x00,0x02, 0x55};
+uchar midBatteryMessageAlreadySent = 0;
+uchar lowBatteryMessageAlreadySent = 0;
+uchar shut_down_flag = 0;
 uchar pingCntr = 0; 
 uchar timerTask;
 //таймаут до перезагрузки RF модуля в количестве циклов таймера. 1 цикл таймера ~ 0.25 секунды.
@@ -37,7 +42,7 @@ int main(void)
    }
    if (packetDataReady){       
      uchar packetSize = assemblePacket();
-     if(!rf_tx_in_progress){
+     if(!rf_tx_in_progress){//Подумать чего тут делать
        rf_send((uchar*)&packet_buf[0], packetSize);
      }
      packetDataReady = 0;      
@@ -101,10 +106,13 @@ void onRF_MultiByteMessage(){
     }else if(rf_rx_buf[msgOffset] == 0xF3){//Режим работы акселерометра
       setAccelerometerMode(rf_rx_buf[msgOffset+1]);
       msgOffset+=2;
-    }else if(rf_rx_buf[msgOffset] == 0xF4){//передача данных loff статуса 
+    }else if(rf_rx_buf[msgOffset] == 0xF4){//Передача данных батарейки
+      measureBatteryVoltage(rf_rx_buf[msgOffset+1]);
+      msgOffset+=2;
+    }else if(rf_rx_buf[msgOffset] == 0xF5){//передача данных loff статуса 
       loffStatEnable = rf_rx_buf[msgOffset+1];
       msgOffset+=2;
-    }else if(rf_rx_buf[msgOffset] == 0xF5){//RF reset timeout при отсутствии Ping команды с компьютера. 
+    }else if(rf_rx_buf[msgOffset] == 0xF6){//RF reset timeout при отсутствии Ping команды с компьютера. 
       resetTimeout = rf_rx_buf[msgOffset+1] * 4;
       msgOffset+=2;
     }else if(rf_rx_buf[msgOffset] == 0xFF){//stop recording command 
@@ -123,6 +131,8 @@ void onRF_MultiByteMessage(){
 
 void startRecording(){
        packetUtilResetCounters();
+       midBatteryMessageAlreadySent = 0;
+       lowBatteryMessageAlreadySent = 0;
        if(resetTimeout){
         TACCR0 = 0xFFFF;
         pingCntr = 0;
@@ -141,6 +151,19 @@ __interrupt void Port1_ISR(void)
     AFE_Read_Data(&new_data[0]);
     loffStat = AFE_getLoffStatus();
     ADC10_Read_Data(&new_data[2]);
+    if(!midBatteryMessageAlreadySent){
+      if((300 < new_data[5]) && (new_data[5] < BATT_MID_TH)){//todo refactor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        midBatteryMessageAlreadySent = 1;
+        rf_send_after((uchar*)&midBatteryMessage[0],7);
+      }
+    }
+//    if(!lowBatteryMessageAlreadySent){
+//      if(300 < new_data[5] < BATT_LOW_TH){//todo refactor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//        lowBatteryMessageAlreadySent = 1;
+//        rf_send_after((uchar*)&lowBatteryMessage[0],7);
+//       // shut_down_flag = 1;
+//      }
+//    }
     ADC10_Measure();
     if(packetAddNewData(new_data)){
       packetDataReady = 1;
@@ -167,6 +190,13 @@ __interrupt void TimerA_ISR(void)
       P3OUT &= ~BIT7; //BT reset pin lo
       timerTask = 0x01;
       pingCntr = 0;
+  }
+  if(shut_down_flag){
+    shut_down_flag++;
+    if(shut_down_flag == 4){//wait 1 second before shut down
+      AFE_StopRecording();
+      P3OUT &= ~BIT7;//BT reset pin low  
+    }
   }
 }
 /* -------------------------------------------------------------------------- */ 

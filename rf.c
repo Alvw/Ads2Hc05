@@ -14,9 +14,12 @@ uchar rf_rx_buf[50];// заменить на константу.
 uchar rf_rx_data_size;
 
 uchar* rf_tx_buf;
+uchar rf_tx_buf_size;
+uchar* rf_tx_buf_1;
+uchar rf_tx_buf_1_size = 0;
+
 uchar rf_tx_cntr = 0;
 uchar rf_rx_cntr = 0;
-uchar rf_tx_data_size;
 
 void rf_reset(){
   P3OUT &= ~BIT7;
@@ -39,16 +42,7 @@ void rf_init(){
     UCA0MCTL = UCBRS2 + UCBRS1 + UCBRS0;               	 // Modulation UCBRSx = 7
     UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
     IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
-    
-  //configure UART 38400
-//  P3SEL |= 0x30;                            // P3.4,5 = USCI_A0 TXD/RXD
-//  UCA0CTL1 |= UCSSEL_1;                    // SMCLC
-//  UCA0BR0 = 160;                            // 16 MHz  38400
-//  UCA0BR1 = 1;                              // 16 MHz  38400
-//  UCA0MCTL = UCBRS2 + UCBRS1;               	 // Modulation UCBRSx = 6
-//  UCA0CTL1 &= ~UCSWRST;                    // **Initialize USCI state machine**
-//  IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
-}
+ }
 
 void rf_prog_and_bind(){
   __delay_cycles(16000000);
@@ -99,17 +93,26 @@ void startRFSending() {
 #pragma vector=USCIAB0TX_VECTOR
 __interrupt void USCI0TX_ISR(void) {
   UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];
-  if (rf_tx_cntr > (rf_tx_data_size - 1)) {                 // TX over?
-    IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
-    rf_tx_in_progress = 0;
+  if (rf_tx_cntr > (rf_tx_buf_size - 1)) { // TX over?
+    if(!rf_tx_buf_1_size){                   //nothing to send in rf_tx_buf_1
+      IE2 &= ~UCA0TXIE;                     // Disable USCI_A0 TX interrupt
+      rf_tx_in_progress = 0;
+    }else{                                  //start sending buffered packet
+      rf_send(rf_tx_buf_1,rf_tx_buf_1_size);
+      rf_tx_buf_1_size = 0;
+    }
   }
 }
 
 void rf_send(uchar* cmd, uchar length){
-  //memcpy(rf_tx_buf, cmd, length);
   rf_tx_buf = cmd;
-  rf_tx_data_size = length;
+  rf_tx_buf_size = length;
   startRFSending();
+}
+
+void rf_send_after(uchar* cmd, uchar length){
+  rf_tx_buf_1 = cmd;
+  rf_tx_buf_1_size = length;
 }
 
 void sendAtCommand(uchar* cmd){
