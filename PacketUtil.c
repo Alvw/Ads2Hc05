@@ -14,6 +14,7 @@ uchar offsetCounter[NUMBER_OF_CHANNELS] = {0,0,0,0,0,0}; // offsetCounter[i]_max
 uchar sumCounter[NUMBER_OF_CHANNELS]= {0,0,0,0,0,0}; // sumCounter[i]_max = div[i] - how many times we sum input data from channel i to have average output data
 uchar loffStatEnable = 0;//0 - disable, 1 - enable
 uchar loffStat;
+uint batteryVoltage = BATT_LOW_TH;
 
 void packetUtilResetCounters(){
   memset(offsetCounter, 0, NUMBER_OF_CHANNELS); 
@@ -101,6 +102,7 @@ uchar assemblePacket(){
   if (div[5] != 0) {
         packetCharBuff[charIndex++] = packetCharBuff[longIndex*4];
         packetCharBuff[charIndex++] = packetCharBuff[longIndex*4 + 1];
+        batteryVoltage = *(uint *)&packetCharBuff[longIndex*4];
         longIndex++;
   }
   //Add loff status if enabled

@@ -10,12 +10,10 @@ void onRF_MessageReceived();
 void onRF_MultiByteMessage();
 void startRecording();
 uchar packetDataReady = 0;
-uchar helloMsg[] = {0xAA, 0x55, 0x05, 0xA0, 0x55};//todo change to const!!!!!!!!!!!!!!!1
-uchar firmwareVersion[] = {0xAA, 0x55, 0x07, 0xA1,0x01,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!
-uchar errMsg[] = {0xAA, 0x55, 0x07, 0xA2,0x00,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!1
-uchar midBatteryMessage[] = {0xAA, 0x55, 0x07, 0xA3,0x00,0x01, 0x55};
-uchar lowBatteryMessage[] = {0xAA, 0x55, 0x07, 0xA3,0x00,0x02, 0x55};
-uchar midBatteryMessageAlreadySent = 0;
+uchar helloMsg[] = {0xAA, 0xA5, 0x05, 0xA0, 0x55};//todo change to const!!!!!!!!!!!!!!!1
+uchar firmwareVersion[] = {0xAA, 0xA5, 0x07, 0xA1,0x01,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!
+uchar errMsg[] = {0xAA, 0xA5, 0x07, 0xA2,0x00,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!1
+uchar lowBatteryMessage[] = {0xAA, 0xA5, 0x07, 0xA3,0x00,0x01, 0x55};
 uchar lowBatteryMessageAlreadySent = 0;
 uchar shut_down_flag = 0;
 uchar pingCntr = 0; 
@@ -131,8 +129,8 @@ void onRF_MultiByteMessage(){
 
 void startRecording(){
        packetUtilResetCounters();
-       midBatteryMessageAlreadySent = 0;
        lowBatteryMessageAlreadySent = 0;
+       shut_down_flag = 0;
        if(resetTimeout){
         TACCR0 = 0xFFFF;
         pingCntr = 0;
@@ -151,19 +149,6 @@ __interrupt void Port1_ISR(void)
     AFE_Read_Data(&new_data[0]);
     loffStat = AFE_getLoffStatus();
     ADC10_Read_Data(&new_data[2]);
-    if(!midBatteryMessageAlreadySent){
-      if((300 < new_data[5]) && (new_data[5] < BATT_MID_TH)){//todo refactor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        midBatteryMessageAlreadySent = 1;
-        rf_send_after((uchar*)&midBatteryMessage[0],7);
-      }
-    }
-//    if(!lowBatteryMessageAlreadySent){
-//      if(300 < new_data[5] < BATT_LOW_TH){//todo refactor!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//        lowBatteryMessageAlreadySent = 1;
-//        rf_send_after((uchar*)&lowBatteryMessage[0],7);
-//       // shut_down_flag = 1;
-//      }
-//    }
     ADC10_Measure();
     if(packetAddNewData(new_data)){
       packetDataReady = 1;
@@ -191,11 +176,19 @@ __interrupt void TimerA_ISR(void)
       timerTask = 0x01;
       pingCntr = 0;
   }
+  if(!lowBatteryMessageAlreadySent){
+      if(batteryVoltage < BATT_LOW_TH){
+        lowBatteryMessageAlreadySent = 1;
+        rf_send_after((uchar*)&lowBatteryMessage[0],7);
+        shut_down_flag = 1;
+      }
+    }
   if(shut_down_flag){
     shut_down_flag++;
-    if(shut_down_flag == 4){//wait 1 second before shut down
+    if(shut_down_flag == 20){//wait 5 second before shut down
       AFE_StopRecording();
       P3OUT &= ~BIT7;//BT reset pin low  
+      TACCR0 = 0x00;
     }
   }
 }
