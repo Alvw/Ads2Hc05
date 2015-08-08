@@ -24,11 +24,14 @@ void sys_init(){
   P1DIR |= BIT7;
   P1OUT &= ~BIT7;
   
-  //initialize BT_CON_STAT pin (P1.0)
-  P1REN |= BIT0; // Pull-UP/DOWN Resistors Enabled
-  P1IES &= ~BIT0;       // Interrupt on rising edge
-  P1IFG &= ~BIT0;      // Clear flag
-  P1IE |= BIT0;        // Enable interrupt on DRDY
+//  //initialize BT_CON_STAT pin (P1.0)
+//  P1REN |= BIT0; // Pull-UP/DOWN Resistors Enabled
+//  P1IES &= ~BIT0;       // Interrupt on rising edge
+//  P1IFG &= ~BIT0;      // Clear flag
+//  P1IE |= BIT0;        // Enable interrupt on DRDY
+//RF reset pin
+  P3DIR |= BIT7;
+  P3OUT &= ~BIT7;
   
 // Неиспользуемые выводы
   P1DIR |= BIT1 + BIT3 + BIT5 + BIT6;

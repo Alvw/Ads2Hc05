@@ -7,20 +7,22 @@
 uchar getStrSize(uchar* str);
 
 //extern
-uchar rf_tx_in_progress; 
+
 uchar rf_rx_data_ready_fg;
-uchar rf_rx_buf_size = 50;
-uchar rf_rx_buf[50];// заменить на константу.
+uchar rf_rx_buf[rf_rx_buf_size];
 uchar rf_rx_data_size;
+uchar rfConStat = 1;
 
 uchar* rf_tx_buf;
-uchar rf_tx_buf_size;
+uchar rf_tx_buf_size = 0;
 uchar* rf_tx_buf_1;
 uchar rf_tx_buf_1_size = 0;
+uchar rf_tx_fail_flag;
 
 uchar rf_tx_cntr = 0;
 uchar rf_rx_cntr = 0;
 
+uchar rf_incoming_message_timeout_cntr = 0;
 void rf_reset(){
   P3OUT &= ~BIT7;
   __delay_cycles(1600000);
@@ -44,18 +46,6 @@ void rf_init(){
     IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
  }
 
-void rf_prog_and_bind(){
-  __delay_cycles(16000000);
-  //sendAtCommand("AT+ROLE?\r\n");
-  sendAtCommand("AT+ROLE=1\r\n");
-  sendAtCommand("AT+NAME=BIMETER\r\n");
-  sendAtCommand("AT+UART=460800,1,0\r\n");
-  sendAtCommand("AT+RMAAD\r\n");
-  sendAtCommand("AT+BIND=14,1,211079\r\n");
-  sendAtCommand("AT+CMODE=0\r\n");
-  sendAtCommand("AT+ADDR?\r\n");
-  led(1);
-}
 
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void USCI0RX_ISR(void) {
@@ -68,12 +58,14 @@ __interrupt void USCI0RX_ISR(void) {
         __bic_SR_register_on_exit(CPUOFF);
       }else{
         rf_rx_data_size = rf_rx_buf[0];
+	if(rf_incoming_message_timeout_cntr == 0) rf_incoming_message_timeout_cntr = 1;
       }
       break;
     default:
       if(rf_rx_cntr == rf_rx_data_size){
         rf_rx_cntr = 0;
         rf_rx_data_ready_fg = 1;
+	rf_incoming_message_timeout_cntr = 0;
         __bic_SR_register_on_exit(CPUOFF);
       }
       break;
@@ -81,7 +73,6 @@ __interrupt void USCI0RX_ISR(void) {
 }
 
 void startRFSending() {
-  rf_tx_in_progress = 1;
   rf_tx_cntr = 0;
   while (!(IFG2 & UCA0TXIFG));
   IFG2 &= ~UCA0TXIFG;                     //tx flag reset!!!!!!!!!
@@ -94,38 +85,40 @@ void startRFSending() {
 __interrupt void USCI0TX_ISR(void) {
   UCA0TXBUF = rf_tx_buf[rf_tx_cntr++];
   if (rf_tx_cntr > (rf_tx_buf_size - 1)) { // TX over?
-    if(!rf_tx_buf_1_size){                   //nothing to send in rf_tx_buf_1
-      IE2 &= ~UCA0TXIE;                     // Disable USCI_A0 TX interrupt
-      rf_tx_in_progress = 0;
-    }else{                                  //start sending buffered packet
-      rf_send(rf_tx_buf_1,rf_tx_buf_1_size);
+    rf_tx_buf_size = 0;
+    if(rf_tx_buf_1_size){                   
+      rf_send(rf_tx_buf_1,rf_tx_buf_1_size);  //start sending packet from the queue
       rf_tx_buf_1_size = 0;
+    }else{                                    //nothing to send in rf_tx_buf_1                          
+      IE2 &= ~UCA0TXIE;                       // Disable USCI_A0 TX interrupt
     }
   }
 }
 
 void rf_send(uchar* cmd, uchar length){
-  rf_tx_buf = cmd;
-  rf_tx_buf_size = length;
-  startRFSending();
-}
-
-void rf_send_after(uchar* cmd, uchar length){
-  rf_tx_buf_1 = cmd;
-  rf_tx_buf_1_size = length;
-}
-
-void sendAtCommand(uchar* cmd){
-  rf_rx_cntr = 0;
-  rf_send(cmd, getStrSize(cmd));
-    __delay_cycles(1600000);
-}
-
-uchar getStrSize(uchar* str){
-  uchar size = 0;
-  while(str[size]){
-    size++;
+  if(!rfConStat) return; //do nothing if RF not connected
+  if(rf_tx_buf_size){//if tx in progress
+    if(rf_tx_buf_1_size){//if tx queue already busy
+      rf_tx_fail_flag = 1; //set fail flag and do nothing
+    }else{//if tx queue empty put data in the queue
+      rf_tx_buf_1_size = length; 
+      rf_tx_buf_1 = cmd;
+    }
+  }else{//if tx idle
+    rf_tx_buf = cmd;
+    rf_tx_buf_size = length;
+    startRFSending();
   }
-  return size;
+}
+
+uchar rf_delete_unfinished_incoming_messages(){
+  if(rf_incoming_message_timeout_cntr){
+    rf_incoming_message_timeout_cntr++;
+    if(rf_incoming_message_timeout_cntr == 4){
+      rf_rx_cntr = 0;
+      return 1;
+    }
+  }
+  return 0;
 }
 

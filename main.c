@@ -6,18 +6,33 @@
 #include "ADC10.h"
 #include "PacketUtil.h"
 
+#define helloMsg "\xAA\xA5\x05\xA0\x55"
+#define firmwareVersion "\xAA\xA5\x07\xA1\x01\x01\x55"
+#define unknownMultiByteCmdError "\xAA\xA5\x07\xA2\x00\x00\x55"
+#define unfinishedIncomingMsgError "\xAA\xA5\x07\xA2\x00\x01\x55"
+#define unknownOneByteCmdError     "\xAA\xA5\x07\xA2\x00\x02\x55" 
+#define noStopMarkerError          "\xAA\xA5\x07\xA2\x00\x03\x55"
+#define txFailError          "\xAA\xA5\x07\xA2\x00\x04\x55"
+#define lowBatteryMessage "\xAA\xA5\x07\xA3\x00\x01\x55"
+#define hardwareConfigMessage "\xAA\xA5\x07\xA4\x02\x01\x55"//reserved, power button, 2ADS channels, 1 accelerometer
+#define stopRecordingResponceMessage "\xAA\xA5\x05\xA5\x55"//reserved, power button, 8ADS channels, 1 accelerometer
+#define chargeShutDownMessage "\xAA\xA5\x05\xA6\x55"
 void onRF_MessageReceived();
 void onRF_MultiByteMessage();
 void startRecording();
+void stopRecording();
 uchar packetDataReady = 0;
-uchar helloMsg[] = {0xAA, 0xA5, 0x05, 0xA0, 0x55};//todo change to const!!!!!!!!!!!!!!!1
-uchar firmwareVersion[] = {0xAA, 0xA5, 0x07, 0xA1,0x01,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!
-uchar errMsg[] = {0xAA, 0xA5, 0x07, 0xA2,0x00,0x00, 0x55};//todo change to const!!!!!!!!!!!!!!!1
-uchar lowBatteryMessage[] = {0xAA, 0xA5, 0x07, 0xA3,0x00,0x01, 0x55};
 uchar lowBatteryMessageAlreadySent = 0;
-uchar shut_down_flag = 0;
+uchar shutDownCntr = 0;
 uchar pingCntr = 0; 
-uchar timerTask;
+uchar rfResetCntr = 0;
+uint powerUpCntr = 1;
+uchar btnCntr = 0;
+uchar isRecording = 0;
+uint batteryVoltage = 800;
+uint sumBatteryVoltage = 8000;
+uchar batteryCntr = 0;
+
 //таймаут до перезагрузки RF модул€ в количестве циклов таймера. 1 цикл таймера ~ 0.25 секунды.
 // 0 - перезагрузка отключена
 uint resetTimeout = 0; 
@@ -26,10 +41,11 @@ int main(void)
 {
   __disable_interrupt();
   sys_init();
+led(1);
   ADC10_Init();
   AFE_Init();
   rf_init();
-  Pwr_Indication();
+   TACCR0 = 0xFFFF;// запуск таймера
   __enable_interrupt();
 
  while (1)
@@ -40,9 +56,7 @@ int main(void)
    }
    if (packetDataReady){       
      uchar packetSize = assemblePacket();
-     if(!rf_tx_in_progress){//ѕодумать чего тут делать
        rf_send((uchar*)&packet_buf[0], packetSize);
-     }
      packetDataReady = 0;      
    }
    if(rf_rx_data_ready_fg || packetDataReady){
@@ -56,8 +70,8 @@ int main(void)
 void onRF_MessageReceived(){
     switch(rf_rx_buf[0]){
     case 0xFF: //stop recording command
-      TACCR0 = 0x00; //timer stop
-      AFE_StopRecording();
+      stopRecording();
+      rf_send(stopRecordingResponceMessage,5);
       break;
     case 0xFE: //start recording command
       startRecording();
@@ -71,14 +85,18 @@ void onRF_MessageReceived(){
     case 0xFB: //ping command
       pingCntr = 0;
       break;
+	case 0xFA: //hardware config request
+     rf_send(hardwareConfigMessage,7);
+      break;
     default:
-      if(rf_rx_buf[0] <= rf_rx_buf_size){//провер€ем длину команды
-        //провер€ем два последних байта == маркер конца пакета
-        if(((rf_rx_buf[rf_rx_buf[0]-1] == 0x55) && (rf_rx_buf[rf_rx_buf[0]-2] == 0x55))){
-          onRF_MultiByteMessage();
-        }else{
-          rf_send(errMsg,7);
-        }
+      if((rf_rx_buf_size < rf_rx_buf[0]) && (rf_rx_buf[0] < 0xFA)){//провер€ем длину однобайтовой команды
+        rf_send(unknownOneByteCmdError,7);
+      }
+      //провер€ем два последних байта == маркер конца пакета
+      if(((rf_rx_buf[rf_rx_buf[0]-1] == 0x55) && (rf_rx_buf[rf_rx_buf[0]-2] == 0x55))){
+        onRF_MultiByteMessage();
+      }else{
+        rf_send(noStopMarkerError,7);
       }
       break;
     }
@@ -113,29 +131,42 @@ void onRF_MultiByteMessage(){
     }else if(rf_rx_buf[msgOffset] == 0xF6){//RF reset timeout при отсутствии Ping команды с компьютера. 
       resetTimeout = rf_rx_buf[msgOffset+1] * 4;
       msgOffset+=2;
-    }else if(rf_rx_buf[msgOffset] == 0xFF){//stop recording command 
-       TACCR0 = 0x00;
-       AFE_StopRecording();
-       msgOffset+=1;
     }else if(rf_rx_buf[msgOffset] == 0xFE){//start recording command 
        startRecording();
        msgOffset+=1;
     }else{
-      rf_send(errMsg,7);
+      rf_send(unknownMultiByteCmdError,7);
       return;
     }
   }
 }
 
 void startRecording(){
+      isRecording = 1;
+       powerUpCntr = 0;
        packetUtilResetCounters();
        lowBatteryMessageAlreadySent = 0;
-       shut_down_flag = 0;
-       if(resetTimeout){
-        TACCR0 = 0xFFFF;
-        pingCntr = 0;
-       }
+       shutDownCntr = 0;
+       pingCntr = 0;
        AFE_StartRecording();
+       led(0);
+}
+
+void stopRecording(){
+  isRecording = 0; 
+  powerUpCntr = 1;
+  pingCntr = 0;
+  AFE_StopRecording();
+}
+
+void addBatteryData(uint battValue){
+  batteryVoltage +=battValue;
+  batteryCntr++;
+  if(batteryCntr == 10){
+      sumBatteryVoltage = batteryVoltage;
+      batteryVoltage = 0;
+      batteryCntr = 0;
+  }
 }
 
 /* ------------------------ ѕрерывание от P1 ----------------------- */
@@ -149,14 +180,12 @@ __interrupt void Port1_ISR(void)
     AFE_Read_Data(&new_data[0]);
     loffStat = AFE_getLoffStatus();
     ADC10_Read_Data(&new_data[2]);
+	addBatteryData(new_data[5]);
     ADC10_Measure();
     if(packetAddNewData(new_data)){
       packetDataReady = 1;
       __bic_SR_register_on_exit(CPUOFF); // Ќе возвращаемс€ в сон при выходе
     }
-  }
-  if (P1IFG & BIT0) { 
-    P1IFG &= ~BIT0;      // Clear BT connection status flag
   }
 }
 /* -------------------------------------------------------------------------- */
@@ -165,31 +194,65 @@ __interrupt void Port1_ISR(void)
 #pragma vector = TIMERA1_VECTOR
 __interrupt void TimerA_ISR(void)
 { 
-  TACTL &= ~TAIFG;
-  if(timerTask == 0x01){
+
+TACTL &= ~TAIFG;
+  if(rfResetCntr == 0x01){
     P3OUT |= BIT7;//BT reset pin hi
-    timerTask = 0;
+    rfResetCntr = 0;
   }
-  pingCntr++;
-  if(pingCntr > resetTimeout){//no signal from host for ~ resetTimeout * 4 seconds
-      P3OUT &= ~BIT7; //BT reset pin lo
-      timerTask = 0x01;
-      pingCntr = 0;
-  }
-  if(!lowBatteryMessageAlreadySent){
-      if(batteryVoltage < BATT_LOW_TH){
-        lowBatteryMessageAlreadySent = 1;
-        rf_send_after((uchar*)&lowBatteryMessage[0],7);
-        shut_down_flag = 1;
+  if(isRecording && rfConStat){
+    if(resetTimeout){
+      pingCntr++;
+      if(pingCntr > resetTimeout){//no signal from host for ~ resetTimeout * 4 seconds
+        P3OUT &= ~BIT7; //BT reset pin lo
+        if (rfResetCntr == 0) rfResetCntr = 1;
+        pingCntr = 0;
       }
     }
-  if(shut_down_flag){
-    shut_down_flag++;
-    if(shut_down_flag == 20){//wait 5 second before shut down
+  }else{//if not recording
+    long new_data[4];
+    ADC10_Read_Data(&new_data[0]);
+    addBatteryData(new_data[3]);
+    ADC10_Measure();
+  }
+  if(BIT0 & P1IN){// if rf connected
+      rfConStat = 1;
+  }else{
+      rfConStat = 0;
+  }
+  if(!lowBatteryMessageAlreadySent){    
+      if(sumBatteryVoltage < BATT_LOW_TH){
+        lowBatteryMessageAlreadySent = 1;
+        rf_send(lowBatteryMessage,7);
+        if(shutDownCntr == 0) {shutDownCntr = 1;}
+      }
+  }
+  if(powerUpCntr){
+    powerUpCntr++;
+    if(powerUpCntr >= 2400){//забыли выключить питание (не стартует запись в теечение ~10 минут)
+        if(shutDownCntr == 0) {shutDownCntr = 1;}
+    }
+    if(powerUpCntr%2){
+      led(1);
+    }else{
+      led(0);
+    }
+  }
+  if(shutDownCntr){
+    shutDownCntr++;
+    if(shutDownCntr > 4){//wait 1 second before shut down
       AFE_StopRecording();
       P3OUT &= ~BIT7;//BT reset pin low  
       TACCR0 = 0x00;
+      led(0);
     }
+  } 
+  if(rf_delete_unfinished_incoming_messages()){
+    rf_send(unfinishedIncomingMsgError,7);
+  }
+  if(rf_tx_fail_flag){//debug information maybe delete
+    rf_tx_fail_flag = 0;
+    rf_send(txFailError,7);
   }
 }
 /* -------------------------------------------------------------------------- */ 
