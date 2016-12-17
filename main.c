@@ -200,7 +200,7 @@ TACTL &= ~TAIFG;
     P3OUT |= BIT7;//BT reset pin hi
     rfResetCntr = 0;
   }
-  if(isRecording && rfConStat){
+  if(isRecording){
     if(resetTimeout){
       pingCntr++;
       if(pingCntr > resetTimeout){//no signal from host for ~ resetTimeout * 4 seconds
