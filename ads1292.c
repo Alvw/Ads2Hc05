@@ -32,8 +32,8 @@ void AFE_Init(){
   AFE_START_DIR |= AFE_START_PIN;
   AFE_START_OUT &= ~AFE_START_PIN; //start pin low 
   //Clock select pin
-  AFE_CLOCK_SELECT_DIR |= AFE_CLOCK_SELECT_PIN;
-  AFE_CLOCK_SELECT_OUT &= ~AFE_CLOCK_SELECT_PIN; //0 - external clock
+  AFE_CLOCK_SELECT_DIR |= AFE_CLOCK_SELECT_PIN; //Removed in new shcematic !!!!!!!!!!!!!!!!!!!!!!1111
+  AFE_CLOCK_SELECT_OUT &= ~AFE_CLOCK_SELECT_PIN; //0 - external clock //Removed in new shcematic !!!!!!!!!!!!!!!!!!!!!!1111
    
   //Spi setup
   UCB0CTL1 |= UCSWRST;                      // **Disable USCI state machine**

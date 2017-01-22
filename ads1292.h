@@ -13,9 +13,9 @@
 #define AFE_START_OUT P4OUT
 #define AFE_START_PIN BIT6
 //Clock Select
-#define AFE_CLOCK_SELECT_DIR P4DIR
-#define AFE_CLOCK_SELECT_OUT P4OUT
-#define AFE_CLOCK_SELECT_PIN BIT7
+#define AFE_CLOCK_SELECT_DIR P4DIR //Removed in new shcematic !!!!!!!!!!!!!!!!!!!!!!1111
+#define AFE_CLOCK_SELECT_OUT P4OUT  //Removed in new shcematic !!!!!!!!!!!!!!!!!!!!!!1111
+#define AFE_CLOCK_SELECT_PIN BIT7  //Removed in new shcematic !!!!!!!!!!!!!!!!!!!!!!1111
 //Data ready pin
 #define AFE_DRDY_PIN BIT2
 
